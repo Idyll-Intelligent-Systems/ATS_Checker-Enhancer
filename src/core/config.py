@@ -23,13 +23,13 @@ class Settings(BaseSettings):
     workers: int = 4
     
     # Security
-    secret_key: str
-    jwt_secret_key: str
+    secret_key: str = "zex-ats-ai-secret-key-development-change-in-production"
+    jwt_secret_key: str = "zex-ats-ai-jwt-secret-key-development-change-in-production"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     
     # Database
-    database_url: str
+    database_url: str = "sqlite:///./data/ats.db"
     redis_url: str = "redis://localhost:6379/0"
     
     # AI Services
@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     
     # File Processing
     max_file_size_mb: int = 50
-    supported_formats: List[str] = ["pdf", "doc", "docx", "txt"]
+    supported_formats: List[str] = ["pdf", "docx", "txt", "jpg", "png", "pptx", "xlsx", "mp3", "mp4"]
     
     # AI Features
     enable_resume_scoring: bool = True
@@ -81,9 +81,16 @@ class Settings(BaseSettings):
     
     @validator('supported_formats', pre=True)
     def parse_supported_formats(cls, v):
+        """Parse supported formats from string or list."""
         if isinstance(v, str):
-            return [fmt.strip() for fmt in v.split(',')]
-        return v
+            if v.lower() == "all":
+                return ["pdf", "docx", "latex", "txt", "jpg", "jpeg", "png", "tiff", "pptx", "ppt", "xlsx", "xls", "mp3", "wav", "m4a", "mp4", "avi"]
+            # Remove any brackets and quotes, then split by comma
+            v = v.strip('[]"\'')
+            return [fmt.strip().strip('"\'') for fmt in v.split(',') if fmt.strip()]
+        elif isinstance(v, list):
+            return v
+        return ["pdf", "docx", "txt"]  # Default fallback
     
     class Config:
         env_file = ".env"
