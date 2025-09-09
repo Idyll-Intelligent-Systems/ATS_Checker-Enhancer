@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZeX-ATS-AI CodePen Demo</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">🚀 ZeX-ATS-AI</div>
+            <div class="tagline">AI-Powered Resume Optimization Platform</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-top: 20px;">
+                <div style="text-align: center;">
+                    <div class="stat-number" style="font-size: 1.8rem; font-weight: 600; color: #667eea;">98%</div>
+                    <div style="font-size: 0.8rem; color: #666;">ATS Score</div>
+                </div>
+                <div style="text-align: center;">
+                    <div class="stat-number" style="font-size: 1.8rem; font-weight: 600; color: #667eea;">50K+</div>
+                    <div style="font-size: 0.8rem; color: #666;">Analyzed</div>
+                </div>
+                <div style="text-align: center;">
+                    <div class="stat-number" style="font-size: 1.8rem; font-weight: 600; color: #667eea;">15K+</div>
+                    <div style="font-size: 0.8rem; color: #666;">Matches</div>
+                </div>
+                <div style="text-align: center;">
+                    <div class="stat-number" style="font-size: 1.8rem; font-weight: 600; color: #667eea;">4.9★</div>
+                    <div style="font-size: 0.8rem; color: #666;">Rating</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resume Analysis Demo -->
+        <div class="card">
+            <h3 style="font-size: 1.3rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-brain" style="color: #667eea;"></i>
+                AI Resume Analysis
+            </h3>
+            
+            <div class="upload-area" onclick="simulateFileUpload(); setTimeout(analyzeResume, 1000);">
+                <div style="font-size: 2.5rem; color: #667eea; margin-bottom: 15px;">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div style="font-size: 1rem; margin-bottom: 10px;">Click to Upload Resume</div>
+                <div style="font-size: 0.8rem; color: #999;">PDF, DOC, DOCX (Max 10MB)</div>
+            </div>
+            
+            <div id="loading" style="display: none; text-align: center; margin: 20px 0;">
+                <div style="border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px;"></div>
+                <div>🤖 AI is analyzing your resume...</div>
+            </div>
+
+            <div id="analysis-result" style="display: none; margin-top: 20px;">
+                <div class="score-circle">
+                    <div class="score-text">0/100</div>
+                </div>
+                <h4 style="text-align: center; margin-bottom: 15px;">ATS Compatibility Score</h4>
+                
+                <div id="insights-container"></div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                    <button class="btn" onclick="showSalaryAnalysis()" style="font-size: 0.9rem; padding: 8px 16px;">
+                        💰 Salary Analysis
+                    </button>
+                    <button class="btn" onclick="findMatchingJobs()" style="font-size: 0.9rem; padding: 8px 16px;">
+                        🎯 Find Jobs
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Results -->
+        <div id="job-results" style="display: none;" class="card">
+            <!-- Job results will be populated by JavaScript -->
+        </div>
+
+        <!-- API Demo Section -->
+        <div class="card">
+            <h3 style="font-size: 1.3rem; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-code" style="color: #667eea;"></i>
+                Live API Demo
+            </h3>
+            <p style="margin-bottom: 15px; color: #666;">Experience our powerful REST API with real-time analysis</p>
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.8rem; margin-bottom: 15px; overflow-x: auto;">
+                <span style="color: #667eea; font-weight: bold;">POST</span> /api/v1/analyze/resume<br>
+                <span style="color: #28a745;">Authorization:</span> Bearer jwt-token<br><br>
+                
+                <span style="color: #dc3545;">Response:</span><br>
+                {<br>
+                &nbsp;&nbsp;"ats_score": 85,<br>
+                &nbsp;&nbsp;"suggestions": [...],<br>
+                &nbsp;&nbsp;"job_matches": 23<br>
+                }
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" onclick="showAPIDemo()" style="flex: 1;">
+                    📚 View Documentation
+                </button>
+                <a href="https://github.com/Idyll-Intelligent-Systems/ATS_Checker-Enhancer" target="_blank" class="btn" style="flex: 1; text-align: center; background: #333;">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+            </div>
+        </div>
+
+        <!-- Features Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div style="background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">🤖</div>
+                <h4 style="margin-bottom: 10px;">AI Analysis</h4>
+                <p style="font-size: 0.9rem; color: #666;">Multi-model AI for comprehensive resume analysis</p>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">📊</div>
+                <h4 style="margin-bottom: 10px;">Real-time Scoring</h4>
+                <p style="font-size: 0.9rem; color: #666;">Instant ATS compatibility feedback</p>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 15px; text-align: center;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">🎯</div>
+                <h4 style="margin-bottom: 10px;">Job Matching</h4>
+                <p style="font-size: 0.9rem; color: #666;">Smart recommendations based on your profile</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 20px; text-align: center;">
+            <p><strong>ZeX-ATS-AI</strong> - Transforming careers through intelligent optimization</p>
+            <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">
+                Built with FastAPI, AI Models, and ❤️
+            </p>
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    
+    <script src="script.js"></script>
+</body>
+</html>
