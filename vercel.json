@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "name": "zex-ats-ai",
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/main.py"
+    }
+  ],
+  "env": {
+    "ENVIRONMENT": "production",
+    "DATABASE_URL": "sqlite:///./data/ats.db",
+    "CORS_ORIGINS": "*",
+    "MAX_FILE_SIZE": "52428800"
+  }
+}
