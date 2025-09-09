@@ -444,6 +444,190 @@ async def download_website(generation_id: str):
         filename=f"{generation.filename.split('.')[0]}_website.zip"
     )
 
+# ATS Analysis endpoints
+@app.post("/api/v1/analyze")
+async def analyze_resume(
+    file: UploadFile = File(...),
+    job_description: str = Form(""),
+    keywords: Optional[str] = Form(None),
+    company: Optional[str] = Form(None)
+):
+    """Analyze resume against job description with ATS scoring."""
+    try:
+        # Validate file type
+        allowed_types = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain']
+        if file.content_type not in allowed_types:
+            raise HTTPException(status_code=400, detail="Unsupported file type")
+        
+        # Create analysis job ID
+        job_id = str(uuid.uuid4())
+        
+        # Save uploaded file
+        upload_path = Path("uploads") / f"{job_id}_{file.filename}"
+        with open(upload_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # Process the resume
+        try:
+            from src.ai.processors.enhanced_document_processor import EnhancedDocumentProcessor
+            processor = EnhancedDocumentProcessor()
+            
+            # Extract text from document
+            extracted_text = await processor.process_document(str(upload_path))
+            
+            # Perform ATS analysis
+            analysis_result = await perform_ats_analysis(
+                resume_text=extracted_text,
+                job_description=job_description,
+                keywords=keywords.split(',') if keywords else [],
+                company=company
+            )
+            
+            # Clean up uploaded file
+            os.unlink(upload_path)
+            
+            return {
+                "job_id": job_id,
+                "filename": file.filename,
+                "analysis": analysis_result,
+                "timestamp": datetime.utcnow().isoformat(),
+                "status": "completed"
+            }
+            
+        except Exception as e:
+            # Clean up uploaded file on error
+            if upload_path.exists():
+                os.unlink(upload_path)
+            logger.error(f"Analysis failed: {e}")
+            return {
+                "job_id": job_id,
+                "filename": file.filename,
+                "error": str(e),
+                "status": "failed",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        
+    except Exception as e:
+        logger.error(f"Resume analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+async def perform_ats_analysis(resume_text: str, job_description: str, keywords: List[str], company: Optional[str]) -> Dict[str, Any]:
+    """Perform comprehensive ATS analysis."""
+    try:
+        # Import spaCy for NLP processing
+        try:
+            import spacy
+            nlp = spacy.load("en_core_web_sm")
+        except Exception as e:
+            logger.warning(f"spaCy not available, using basic analysis: {e}")
+            nlp = None
+        
+        # Basic text processing
+        resume_words = resume_text.lower().split()
+        job_words = job_description.lower().split() if job_description else []
+        
+        # Calculate keyword matches
+        keyword_matches = []
+        if keywords:
+            for keyword in keywords:
+                if keyword.lower().strip() in resume_text.lower():
+                    keyword_matches.append(keyword.strip())
+        
+        # Calculate job description match score
+        job_match_count = 0
+        if job_words:
+            for word in job_words:
+                if len(word) > 3 and word in resume_text.lower():
+                    job_match_count += 1
+        
+        match_score = min(100, (job_match_count / max(len(job_words), 1)) * 100) if job_words else 0
+        
+        # Skills extraction using spaCy if available
+        extracted_skills = []
+        if nlp:
+            doc = nlp(resume_text)
+            # Extract entities that might be skills
+            for ent in doc.ents:
+                if ent.label_ in ["ORG", "PRODUCT", "TECH"]:
+                    extracted_skills.append(ent.text)
+        
+        # Common technical skills to look for
+        common_skills = [
+            "Python", "Java", "JavaScript", "React", "Angular", "Node.js", "Docker", "Kubernetes",
+            "AWS", "Azure", "GCP", "SQL", "MongoDB", "PostgreSQL", "Git", "CI/CD", "Agile",
+            "Scrum", "Machine Learning", "AI", "Data Science", "FastAPI", "Flask", "Django"
+        ]
+        
+        found_skills = []
+        for skill in common_skills:
+            if skill.lower() in resume_text.lower():
+                found_skills.append(skill)
+        
+        # Combine extracted and found skills
+        all_skills = list(set(extracted_skills + found_skills))
+        
+        # ATS Score calculation
+        keyword_score = (len(keyword_matches) / max(len(keywords), 1) * 30) if keywords else 30
+        job_match_score = match_score * 0.4
+        skills_score = min(30, len(all_skills) * 2)
+        
+        ats_score = min(100, keyword_score + job_match_score + skills_score)
+        
+        # Recommendations
+        recommendations = []
+        if ats_score < 70:
+            recommendations.append("Consider adding more relevant keywords from the job description")
+        if len(all_skills) < 5:
+            recommendations.append("Include more technical skills relevant to the position")
+        if not keyword_matches and keywords:
+            recommendations.append("Add specific keywords mentioned in the job posting")
+        
+        return {
+            "ats_score": round(ats_score, 1),
+            "match_percentage": round(match_score, 1),
+            "keyword_matches": keyword_matches,
+            "missing_keywords": [k for k in keywords if k not in keyword_matches] if keywords else [],
+            "extracted_skills": all_skills,
+            "recommendations": recommendations,
+            "analysis_details": {
+                "total_words": len(resume_words),
+                "keyword_density": round((len(keyword_matches) / max(len(resume_words), 1)) * 100, 2),
+                "job_relevance": "High" if match_score > 70 else "Medium" if match_score > 40 else "Low"
+            },
+            "company": company
+        }
+        
+    except Exception as e:
+        logger.error(f"ATS analysis failed: {e}")
+        return {
+            "ats_score": 0,
+            "error": str(e),
+            "status": "failed"
+        }
+
+@app.get("/api/v1/analyze/{job_id}")
+async def get_analysis_result(job_id: str):
+    """Get analysis result by job ID."""
+    # This would typically fetch from database
+    # For now, return a placeholder
+    return {
+        "job_id": job_id,
+        "status": "completed",
+        "message": "Analysis result would be retrieved from database"
+    }
+
+@app.get("/api/v1/analyze/history")
+async def get_analysis_history(limit: int = 10):
+    """Get analysis history."""
+    # This would typically fetch from database
+    return {
+        "analyses": [],
+        "total": 0,
+        "limit": limit,
+        "message": "Analysis history would be retrieved from database"
+    }
+
 # Dashboard endpoint
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard():
