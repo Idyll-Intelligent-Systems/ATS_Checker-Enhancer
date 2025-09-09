@@ -613,7 +613,7 @@ Download: resume_site.zip
 
 How to publish (GitHub Pages)
 
-1. Create a new GitHub repo (e.g., shiva-veldi-resume).
+1. Create a new GitHub repo (e.g., xuser-idyll-resume).
 
 
 2. Unzip and push the contents to the repo root on branch main.
@@ -645,7 +645,7 @@ Want me to also generate a matching PDF export or add a contact form (Netlify fo
 
 I built a clean, static resume website based on the description: dark-themed, modern, recruiter-friendly, fully static (no dependencies or frameworks), and SEO-optimized. It pulls all content from `data/resume.json` for easy customization. The design uses a professional layout with sections for summary, experience, education, skills, etc. It's responsive for mobile/desktop.
 
-I used the available public information about "Shiva Veldi" (which appears to be Shiva Kumar Veldi based on professional profiles) to populate a sample `data/resume.json`. If this isn't accurate or you have your own details, just edit the JSON file—the site will update automatically.
+I used placeholder information about "XUser Idyll" to populate a sample `data/resume.json`. You can edit the JSON file with your own details—the site will update automatically.
 
 Here's the content of each file. Create a folder (e.g., `resume-site`), add these files in the structure below, zip it up, and follow the publishing steps.
 
@@ -673,8 +673,8 @@ This is the main page. It fetches `resume.json` via JavaScript and dynamically r
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Professional resume of Shiva Kumar Veldi, Senior Software Engineer at Samsung R&D Institute India.">
-    <title>Shiva Kumar Veldi - Resume</title>
+    <meta name="description" content="Professional resume of XUser Idyll, Software Engineer specializing in modern web development and AI solutions.">
+    <title>XUser Idyll - Resume</title>
     <link rel="stylesheet" href="assets/styles.css">
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 </head>
@@ -930,10 +930,10 @@ if __name__ == "__main__":
 3. **Download equivalent**: Since I can't attach files here, copy-paste the code into files on your machine.
 
 #### Publishing to GitHub Pages
-1. Create a new GitHub repo (e.g., `shiva-veldi-resume`).
+1. Create a new GitHub repo (e.g., `xuser-idyll-resume`).
 2. Unzip (or add) the contents to the repo root and push to `main`.
 3. In GitHub: Go to Settings > Pages > Source: GitHub Actions. The workflow will run automatically on push.
-4. Site live at: https://<your-username>.github.io/shiva-veldi-resume/.
+4. Site live at: https://<your-username>.github.io/xuser-idyll-resume/.
 
 #### Optional: Live Sandbox/Alternative Hosting
 - Host on Netlify/Vercel/Cloudflare Pages: Create an account, drag-and-drop the folder (no build command needed—it's static).
@@ -1053,9 +1053,9 @@ resume-site/
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Professional resume of Shiva Kumar Veldi, Senior Software Engineer specializing in high-performance computing and software optimization.">
-    <meta name="keywords" content="Shiva Kumar Veldi, resume, software engineer, Samsung, IIT Kharagpur, HPC, C++, machine learning">
-    <title>Shiva Kumar Veldi - Resume</title>
+    <meta name="description" content="Professional resume of XUser Idyll, Software Engineer specializing in modern web development and AI solutions.">
+    <meta name="keywords" content="XUser Idyll, resume, software engineer, web development, AI, machine learning">
+    <title>XUser Idyll - Resume</title>
     <link rel="stylesheet" href="assets/styles.css">
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
     <!-- Google Analytics -->
@@ -1383,10 +1383,10 @@ if __name__ == "__main__":
 5. **Download equivalent**: Copy-paste into files on your machine.
 
 #### Publishing to GitHub Pages
-1. Create/update GitHub repo (e.g., `shiva-veldi-resume`).
+1. Create/update GitHub repo (e.g., `xuser-idyll-resume`).
 2. Push contents to `main`.
 3. Settings > Pages > Source: GitHub Actions (deploys auto).
-4. Live at: https://<your-username>.github.io/shiva-veldi-resume/.
+4. Live at: https://<your-username>.github.io/xuser-idyll-resume/.
 
 #### Live Sandbox/Alternative Hosting
 - **Netlify**: Drag folder to netlify.com/drop (enables forms auto).

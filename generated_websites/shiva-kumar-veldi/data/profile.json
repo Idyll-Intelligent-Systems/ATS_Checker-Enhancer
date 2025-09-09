@@ -1,0 +1,212 @@
+{
+  "personal": {
+    "name": "Shiva Kumar Veldi",
+    "title": "Senior Software Engineer",
+    "tagline": "Building high-performance systems that process millions of requests daily",
+    "photo": "assets/profile.jpg",
+    "contact": {
+      "email": "shivaveldi160@gmail.com",
+      "phone": "+91-8158044333",
+      "location": "Bangalore, India",
+      "website": "https://shiva-kumar-veldi.dev",
+      "linkedin": "https://linkedin.com/in/shiva-kumar-veldi",
+      "github": "https://github.com/shiva-kumar-veldi",
+      "twitter": "https://twitter.com/shivakveldi",
+      "instagram": "https://instagram.com/shivakveldi"
+    }
+  },
+  "about": {
+    "summary": "Engineer with a dual degree from IIT Kharagpur in Computer Science and High-Performance Computing, and over 3 years of experience at Samsung R&D. Specialized in building low-latency, high-throughput systems that process millions of requests daily. Strong background in performance optimization, quantitative modeling, and large-scale system design.",
+    "highlights": [
+      "IIT Kharagpur Dual Degree Graduate (CS + HPC)",
+      "3+ years at Samsung R&D Institute",
+      "Expert in high-performance, low-latency systems",
+      "Handles 16M+ daily requests with 99.9% uptime",
+      "Reduced system latency by 40% through optimization"
+    ],
+    "values": [
+      "Performance Excellence",
+      "System Reliability",
+      "Continuous Innovation",
+      "Technical Mastery",
+      "Collaborative Leadership"
+    ]
+  },
+  "skills": {
+    "technical": [
+      "C++17/20",
+      "Python",
+      "Java",
+      "SQL",
+      "Bash",
+      "OpenMP",
+      "MPI",
+      "CUDA",
+      "SIMD",
+      "Multithreading",
+      "AWS",
+      "Docker",
+      "Terraform",
+      "Linux",
+      "Git"
+    ],
+    "tools": [
+      "Linux perf",
+      "Flame Graphs",
+      "Intel VTune",
+      "Sanitizers",
+      "Heaptrack",
+      "NGINX",
+      "Apache",
+      "DynamoDB",
+      "RDS",
+      "Lambda"
+    ],
+    "soft": [
+      "System Architecture",
+      "Performance Optimization",
+      "Team Leadership",
+      "Technical Communication",
+      "Problem Solving",
+      "Global Collaboration"
+    ]
+  },
+  "experience": [
+    {
+      "role": "Senior Software Engineer",
+      "company": "Samsung Research Institute",
+      "location": "Bangalore, India",
+      "dates": "Jun 2022 – Present",
+      "type": "Full-time",
+      "description": [
+        "Scaled eSIM Discovery Service to handle 16M+ daily requests with 99.9% uptime",
+        "Reduced tail latency by 40% via asynchronous I/O and lock-free communication",
+        "Migrated large-scale services from EC2 to ECS clusters for better scaling",
+        "Enhanced system security with enterprise-grade TLS and continuous monitoring"
+      ],
+      "technologies": [
+        "C++20",
+        "AWS ECS",
+        "Docker",
+        "Linux",
+        "Performance Optimization"
+      ]
+    },
+    {
+      "role": "Software Engineering Intern",
+      "company": "Samsung Research Institute",
+      "location": "Bangalore, India",
+      "dates": "May 2021 – Jul 2021",
+      "type": "Internship",
+      "description": [
+        "Developed GPU-accelerated defect classification model",
+        "Improved accuracy and throughput for large-scale image analysis",
+        "Collaborated with research teams on computer vision projects"
+      ],
+      "technologies": [
+        "GPU Computing",
+        "Machine Learning",
+        "Computer Vision",
+        "Python"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "title": "High-Frequency Trading System",
+      "description": "Built comprehensive HFT infrastructure with sub-microsecond performance",
+      "technologies": [
+        "C++20",
+        "Lock-Free Programming",
+        "Real-time Systems",
+        "Financial APIs"
+      ],
+      "highlights": [
+        "Lock-free order book with sub-microsecond updates",
+        "Real-time market data handler with gap recovery",
+        "Event-driven backtesting framework with nanosecond precision"
+      ],
+      "links": {
+        "github": "#",
+        "demo": "#"
+      }
+    },
+    {
+      "title": "Pedestrian Intent Prediction System",
+      "description": "Real-time AI system for pedestrian behavior prediction using deep learning",
+      "technologies": [
+        "YOLOv4",
+        "DeepSORT",
+        "LSTM",
+        "Computer Vision",
+        "Real-time Processing"
+      ],
+      "highlights": [
+        "Achieved 97% accuracy in intent prediction",
+        "Real-time processing at 26 FPS",
+        "M.Tech thesis project with practical applications"
+      ],
+      "links": {
+        "github": "#",
+        "paper": "#"
+      }
+    },
+    {
+      "title": "Automated Learning Science Analysis",
+      "description": "Machine learning pipeline for educational content analysis",
+      "technologies": [
+        "Word2Vec",
+        "SVM",
+        "NLP",
+        "Python",
+        "Machine Learning"
+      ],
+      "highlights": [
+        "Achieved +15% improvement over baseline methods",
+        "Automated analysis of learning science data",
+        "B.Tech final year project"
+      ],
+      "links": {
+        "github": "#"
+      }
+    }
+  ],
+  "education": [
+    {
+      "degree": "Dual Degree (B.Tech + M.Tech)",
+      "institution": "Indian Institute of Technology, Kharagpur",
+      "location": "Kharagpur, India",
+      "dates": "2017 - 2022",
+      "gpa": "First Class",
+      "coursework": [
+        "Computer Science & Engineering (B.Tech)",
+        "High-Performance & Parallel Computing (M.Tech)",
+        "Algorithms, Operating Systems, Distributed Systems",
+        "Machine Learning, Deep Learning, Finance"
+      ]
+    }
+  ],
+  "certifications": [
+    {
+      "name": "Samsung Software Competency (Advanced + Professional)",
+      "issuer": "Samsung",
+      "date": "2023",
+      "credential": "SSC-AP-2023"
+    }
+  ],
+  "achievements": [
+    "Samsung Excellence Award – Super Tech (Development to Market)",
+    "Samsung Software Competency Certification (Advanced + Professional)",
+    "JEE Advanced AIR 1187, JEE Mains AIR 2948",
+    "Successfully scaled production systems to handle 16M+ daily requests",
+    "Published M.Tech thesis on real-time pedestrian intent prediction"
+  ],
+  "interests": [
+    "High-Frequency Trading",
+    "Quantitative Finance",
+    "High-Performance Computing",
+    "System Architecture",
+    "Performance Optimization",
+    "Machine Learning"
+  ]
+}

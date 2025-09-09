@@ -1,0 +1,154 @@
+{
+    "personal": {
+        "name": "XUser Idyll",
+        "title": "Software Engineer & AI Specialist",
+        "tagline": "Building innovative solutions with modern technology",
+        "photo": "assets/profile.jpg",
+        "contact": {
+            "email": "xuser@idyll-systems.ai",
+            "phone": "+1-XXX-XXX-XXXX",
+            "location": "Tech Hub, Innovation City",
+            "website": "https://xuser-idyll.dev",
+            "linkedin": "https://linkedin.com/in/xuser-idyll",
+            "github": "https://github.com/xuser-idyll",
+            "twitter": "https://twitter.com/xuser_idyll",
+            "instagram": "https://instagram.com/xuser.idyll"
+        }
+    },
+    "about": {
+        "summary": "Passionate Software Engineer with expertise in full-stack development, machine learning, and AI solutions. Experienced in building scalable applications and implementing cutting-edge technologies to solve complex problems. Committed to continuous learning and delivering high-quality, user-centric solutions.",
+        "highlights": [
+            "5+ years of experience in software development",
+            "Expertise in modern web technologies and frameworks",
+            "Strong background in machine learning and AI",
+            "Proven track record of delivering scalable solutions",
+            "Passionate about innovation and emerging technologies"
+        ],
+        "values": [
+            "Innovation & Creativity",
+            "Quality & Excellence", 
+            "Continuous Learning",
+            "Team Collaboration",
+            "User-Centric Design"
+        ]
+    },
+    "skills": {
+        "technical": [
+            "Python", "JavaScript", "TypeScript", "React", "Node.js",
+            "Docker", "AWS", "MongoDB", "PostgreSQL", "Redis",
+            "Machine Learning", "TensorFlow", "PyTorch", "FastAPI",
+            "Git", "CI/CD", "Microservices", "RESTful APIs"
+        ],
+        "tools": [
+            "VS Code", "PyCharm", "Postman", "Figma", "Slack",
+            "Jira", "Confluence", "GitHub", "GitLab", "Jenkins"
+        ],
+        "soft": [
+            "Leadership", "Problem Solving", "Communication",
+            "Project Management", "Mentoring", "Agile Methodology"
+        ]
+    },
+    "experience": [
+        {
+            "role": "Senior Software Engineer",
+            "company": "Tech Innovation Labs",
+            "location": "Innovation City",
+            "dates": "2022 - Present",
+            "type": "Full-time",
+            "description": [
+                "Lead development of AI-powered applications serving 100K+ users",
+                "Architected microservices infrastructure improving system performance by 40%",
+                "Mentored junior developers and established best practices",
+                "Collaborated with cross-functional teams to deliver high-impact features"
+            ],
+            "technologies": ["Python", "React", "AWS", "Docker", "PostgreSQL"]
+        },
+        {
+            "role": "Full Stack Developer",
+            "company": "Digital Solutions Inc.",
+            "location": "Tech City",
+            "dates": "2020 - 2022",
+            "type": "Full-time", 
+            "description": [
+                "Developed responsive web applications using modern frameworks",
+                "Implemented RESTful APIs and database optimization strategies",
+                "Reduced application load times by 50% through performance optimization",
+                "Participated in code reviews and agile development processes"
+            ],
+            "technologies": ["JavaScript", "Node.js", "MongoDB", "Vue.js"]
+        }
+    ],
+    "projects": [
+        {
+            "title": "AI-Powered Resume Analyzer",
+            "description": "Advanced multi-format resume analysis platform with ATS optimization",
+            "technologies": ["Python", "FastAPI", "Machine Learning", "Docker"],
+            "highlights": [
+                "Supports 16+ file formats including PDF, images, audio, and video",
+                "Real-time analysis with 95% accuracy",
+                "Deployed on cloud infrastructure with auto-scaling"
+            ],
+            "links": {
+                "demo": "#",
+                "github": "#",
+                "live": "#"
+            }
+        },
+        {
+            "title": "Dynamic Website Generator",
+            "description": "Automated tool for creating personalized portfolio websites from resume uploads",
+            "technologies": ["JavaScript", "React", "Node.js", "AI APIs"],
+            "highlights": [
+                "Automatic content extraction and structuring",
+                "Multiple responsive design templates",
+                "SEO optimization and deployment automation"
+            ],
+            "links": {
+                "demo": "#",
+                "github": "#"
+            }
+        }
+    ],
+    "education": [
+        {
+            "degree": "Master of Science in Computer Science",
+            "institution": "Tech University",
+            "location": "Innovation City",
+            "dates": "2018 - 2020",
+            "gpa": "3.8/4.0",
+            "coursework": ["Machine Learning", "Advanced Algorithms", "Software Architecture", "Data Science"]
+        },
+        {
+            "degree": "Bachelor of Technology in Computer Engineering",
+            "institution": "Engineering College",
+            "location": "Tech City",
+            "dates": "2014 - 2018",
+            "gpa": "3.6/4.0",
+            "coursework": ["Data Structures", "Operating Systems", "Database Systems", "Web Development"]
+        }
+    ],
+    "certifications": [
+        {
+            "name": "AWS Certified Solutions Architect",
+            "issuer": "Amazon Web Services",
+            "date": "2023",
+            "credential": "AWS-SAA-XXXX"
+        },
+        {
+            "name": "Google Cloud Professional Developer",
+            "issuer": "Google Cloud",
+            "date": "2022",
+            "credential": "GCP-PD-XXXX"
+        }
+    ],
+    "achievements": [
+        "Led team that won Best Innovation Award at TechHack 2023",
+        "Published research paper on AI applications in web development",
+        "Speaker at 3 major tech conferences",
+        "Contributed to 5+ open-source projects with 1000+ stars"
+    ],
+    "interests": [
+        "Artificial Intelligence", "Open Source", "Tech Blogging",
+        "Photography", "Travel", "Music Production"
+    ]
+}
