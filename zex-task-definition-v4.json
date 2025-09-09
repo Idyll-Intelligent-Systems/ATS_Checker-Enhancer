@@ -1,0 +1,49 @@
+{
+    "family": "zex-service",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "2048",
+    "memory": "8192",
+    "executionRoleArn": "arn:aws:iam::879584802968:role/ecsTaskExecutionRole",
+    "taskRoleArn": "arn:aws:iam::879584802968:role/zex-task-role",
+    "containerDefinitions": [
+        {
+            "name": "zex-container",
+            "image": "879584802968.dkr.ecr.eu-north-1.amazonaws.com/zex@sha256:fec47639998de7e62ab8b5e4dbdf3d4cefbae1d4a45fa91aaa3bd19b4ede5dd7",
+            "portMappings": [
+                {
+                    "containerPort": 4000,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "PORT",
+                    "value": "4000"
+                },
+                {
+                    "name": "ENV",
+                    "value": "production"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/zex-service",
+                    "awslogs-region": "eu-north-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "healthCheck": {
+                "command": ["CMD-SHELL", "curl -f http://localhost:4000/health || exit 1"],
+                "interval": 30,
+                "timeout": 5,
+                "retries": 3,
+                "startPeriod": 60
+            },
+            "cpu": 2048,
+            "memory": 8192
+        }
+    ]
+}
