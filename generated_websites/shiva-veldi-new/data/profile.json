@@ -1,0 +1,135 @@
+{
+  "personal": {
+    "name": "Shiva Kumar Veldi",
+    "title": "Software Engineer & Developer",
+    "tagline": "Building innovative solutions with modern technology",
+    "photo": "assets/profile.jpg",
+    "contact": {
+      "email": "ne+91-8158044333shivaveldi160@gmail.com",
+      "phone": "+91-8158044333",
+      "location": "Tech City, Innovation State",
+      "website": "https://portfolio.example.com",
+      "linkedin": "https://linkedin.com/in/username",
+      "github": "https://github.com/username",
+      "twitter": "https://twitter.com/username",
+      "instagram": "https://instagram.com/username"
+    }
+  },
+  "about": {
+    "summary": "Passionate software engineer with expertise in modern web development and emerging technologies. Committed to creating efficient, scalable solutions and continuously learning new skills.",
+    "highlights": [
+      "Experienced in full-stack development",
+      "Strong problem-solving abilities",
+      "Excellent communication skills",
+      "Team collaboration and leadership",
+      "Continuous learning mindset"
+    ],
+    "values": [
+      "Innovation",
+      "Quality",
+      "Learning",
+      "Teamwork",
+      "Excellence"
+    ]
+  },
+  "skills": {
+    "technical": [
+      "Python",
+      "Java",
+      "C++",
+      "Sql",
+      "Docker",
+      "Aws"
+    ],
+    "tools": [
+      "VS Code",
+      "GitHub",
+      "Postman",
+      "Figma",
+      "Slack"
+    ],
+    "soft": [
+      "Leadership",
+      "Communication",
+      "Problem Solving",
+      "Project Management"
+    ]
+  },
+  "experience": [
+    {
+      "role": "Software Engineer",
+      "company": "Tech Company",
+      "location": "Tech City",
+      "dates": "2020 - Present",
+      "type": "Full-time",
+      "description": [
+        "Developed and maintained web applications",
+        "Collaborated with cross-functional teams",
+        "Implemented best practices and code reviews",
+        "Contributed to system architecture decisions"
+      ],
+      "technologies": [
+        "Python",
+        "JavaScript",
+        "React",
+        "PostgreSQL"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "title": "Dynamic Portfolio Generator",
+      "description": "An automated tool for creating personalized portfolio websites from resume uploads",
+      "technologies": [
+        "Python",
+        "JavaScript",
+        "HTML/CSS",
+        "AI APIs"
+      ],
+      "highlights": [
+        "Automated content extraction and structuring",
+        "Multiple responsive design templates",
+        "SEO optimization and performance tuning"
+      ],
+      "links": {
+        "github": "#",
+        "demo": "#"
+      }
+    }
+  ],
+  "education": [
+    {
+      "degree": "Bachelor of Science in Computer Science",
+      "institution": "University Name",
+      "location": "City, State",
+      "dates": "2016 - 2020",
+      "gpa": "3.7/4.0",
+      "coursework": [
+        "Data Structures",
+        "Algorithms",
+        "Software Engineering",
+        "Databases"
+      ]
+    }
+  ],
+  "certifications": [
+    {
+      "name": "AWS Certified Developer",
+      "issuer": "Amazon Web Services",
+      "date": "2023",
+      "credential": "AWS-DEV-XXXX"
+    }
+  ],
+  "achievements": [
+    "Contributed to open-source projects",
+    "Presented at local tech meetups",
+    "Mentored junior developers",
+    "Led successful project deliveries"
+  ],
+  "interests": [
+    "Open Source",
+    "Tech Innovation",
+    "Continuous Learning",
+    "Problem Solving"
+  ]
+}

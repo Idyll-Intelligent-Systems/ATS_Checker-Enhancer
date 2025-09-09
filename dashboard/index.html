@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zex Platform - AI-Powered Career Intelligence</title>
+    <meta name="description" content="Advanced AI platform for ATS optimization, dynamic website generation, and career intelligence analytics">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+    
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/themes.css">
+    <link rel="stylesheet" href="assets/css/animations.css">
+    
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+</head>
+<body class="theme-dark">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <div class="brand-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-name">Zex Platform</span>
+                    <span class="brand-tagline">AI Career Intelligence</span>
+                </div>
+            </div>
+            
+            <div class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <div class="nav-item dropdown" data-dropdown="services">
+                        <span class="nav-link">
+                            <i class="fas fa-rocket"></i>
+                            Services
+                            <i class="fas fa-chevron-down dropdown-arrow"></i>
+                        </span>
+                        <div class="dropdown-menu" id="services">
+                            <div class="dropdown-grid">
+                                <div class="dropdown-section">
+                                    <h4><i class="fas fa-search"></i> ATS Intelligence</h4>
+                                    <a href="#zex-ats" class="dropdown-link">
+                                        <i class="fas fa-chart-line"></i>
+                                        ATS Analyzer
+                                    </a>
+                                    <a href="#ats-metrics" class="dropdown-link">
+                                        <i class="fas fa-analytics"></i>
+                                        Metrics Dashboard
+                                    </a>
+                                    <a href="#comparison" class="dropdown-link">
+                                        <i class="fas fa-users"></i>
+                                        Industry Compare
+                                    </a>
+                                </div>
+                                <div class="dropdown-section">
+                                    <h4><i class="fas fa-globe"></i> Website Generation</h4>
+                                    <a href="#website-gen" class="dropdown-link">
+                                        <i class="fas fa-file-pdf"></i>
+                                        PDF to Website
+                                    </a>
+                                    <a href="#templates" class="dropdown-link">
+                                        <i class="fas fa-palette"></i>
+                                        Templates
+                                    </a>
+                                    <a href="#deployment" class="dropdown-link">
+                                        <i class="fas fa-cloud-upload"></i>
+                                        Deploy
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="nav-item dropdown" data-dropdown="tools">
+                        <span class="nav-link">
+                            <i class="fas fa-tools"></i>
+                            Tools
+                            <i class="fas fa-chevron-down dropdown-arrow"></i>
+                        </span>
+                        <div class="dropdown-menu" id="tools">
+                            <a href="#api-docs" class="dropdown-link">
+                                <i class="fas fa-code"></i>
+                                API Documentation
+                            </a>
+                            <a href="#swagger-ats" class="dropdown-link">
+                                <i class="fas fa-cog"></i>
+                                ATS API Swagger
+                            </a>
+                            <a href="#swagger-website" class="dropdown-link">
+                                <i class="fas fa-globe"></i>
+                                Website API Swagger
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="#analytics" class="nav-link">
+                            <i class="fas fa-chart-bar"></i>
+                            Analytics
+                        </a>
+                    </div>
+                    
+                    <div class="nav-item">
+                        <a href="#docs" class="nav-link">
+                            <i class="fas fa-book"></i>
+                            Docs
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="nav-actions">
+                <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                    <i class="fas fa-sun light-icon"></i>
+                    <i class="fas fa-moon dark-icon"></i>
+                </button>
+                <button class="nav-toggle" id="navToggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-bg">
+            <div class="hero-particles"></div>
+            <div class="hero-grid"></div>
+        </div>
+        
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-rocket"></i>
+                    <span>AI-Powered Career Intelligence Platform</span>
+                </div>
+                
+                <h1 class="hero-title">
+                    Transform Your Career with
+                    <span class="gradient-text">AI Intelligence</span>
+                </h1>
+                
+                <p class="hero-description">
+                    Advanced ATS optimization, dynamic website generation, and comprehensive career analytics. 
+                    Powered by cutting-edge AI to accelerate your professional journey.
+                </p>
+                
+                <div class="hero-actions">
+                    <button class="btn btn-primary btn-lg" onclick="scrollToSection('services')">
+                        <i class="fas fa-rocket"></i>
+                        Get Started
+                    </button>
+                    <button class="btn btn-outline btn-lg" onclick="scrollToSection('demo')">
+                        <i class="fas fa-play"></i>
+                        Watch Demo
+                    </button>
+                </div>
+                
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number" data-count="10000">0+</div>
+                        <div class="stat-label">Resumes Analyzed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" data-count="5000">0+</div>
+                        <div class="stat-label">Websites Generated</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" data-count="95">0%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="services">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Our Services</h2>
+                <p class="section-description">
+                    Comprehensive AI-powered solutions for career advancement
+                </p>
+            </div>
+            
+            <div class="services-grid">
+                <!-- ATS Intelligence -->
+                <div class="service-card" data-service="ats">
+                    <div class="service-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="service-content">
+                        <h3>Zex ATS AI</h3>
+                        <p>Advanced ATS analysis with AI-powered optimization recommendations</p>
+                        <ul class="service-features">
+                            <li><i class="fas fa-check"></i> ATS Score Analysis</li>
+                            <li><i class="fas fa-check"></i> Keyword Optimization</li>
+                            <li><i class="fas fa-check"></i> Industry Benchmarking</li>
+                            <li><i class="fas fa-check"></i> Real-time Metrics</li>
+                        </ul>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="openService('ats')">
+                                <i class="fas fa-external-link-alt"></i>
+                                Launch Service
+                            </button>
+                            <a href="#swagger-ats" class="btn btn-outline">
+                                <i class="fas fa-code"></i>
+                                API Docs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Website Generator -->
+                <div class="service-card" data-service="website">
+                    <div class="service-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <div class="service-content">
+                        <h3>Dynamic Website Generator</h3>
+                        <p>Transform PDFs into stunning portfolio websites with AI extraction</p>
+                        <ul class="service-features">
+                            <li><i class="fas fa-check"></i> PDF to Website Conversion</li>
+                            <li><i class="fas fa-check"></i> Multiple Themes</li>
+                            <li><i class="fas fa-check"></i> One-Click Deployment</li>
+                            <li><i class="fas fa-check"></i> Mobile Responsive</li>
+                        </ul>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="openService('website')">
+                                <i class="fas fa-external-link-alt"></i>
+                                Launch Service
+                            </button>
+                            <a href="#swagger-website" class="btn btn-outline">
+                                <i class="fas fa-code"></i>
+                                API Docs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analytics Dashboard -->
+                <div class="service-card" data-service="analytics">
+                    <div class="service-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="service-content">
+                        <h3>Career Analytics</h3>
+                        <p>Comprehensive insights and benchmarking for career optimization</p>
+                        <ul class="service-features">
+                            <li><i class="fas fa-check"></i> Performance Metrics</li>
+                            <li><i class="fas fa-check"></i> Industry Comparison</li>
+                            <li><i class="fas fa-check"></i> Trend Analysis</li>
+                            <li><i class="fas fa-check"></i> AI Recommendations</li>
+                        </ul>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="scrollToSection('analytics-dashboard')">
+                                <i class="fas fa-chart-line"></i>
+                                View Analytics
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Analytics Dashboard -->
+    <section id="analytics-dashboard" class="analytics-dashboard">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Live Analytics Dashboard</h2>
+                <p class="section-description">Real-time insights and performance metrics</p>
+            </div>
+            
+            <div class="dashboard-grid">
+                <!-- Metrics Cards -->
+                <div class="metrics-row">
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="metric-content">
+                            <div class="metric-value" id="totalUsers">12,546</div>
+                            <div class="metric-label">Active Users</div>
+                            <div class="metric-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                +12.5%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <div class="metric-content">
+                            <div class="metric-value" id="totalAnalyses">45,892</div>
+                            <div class="metric-label">ATS Analyses</div>
+                            <div class="metric-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                +8.3%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="metric-content">
+                            <div class="metric-value" id="totalWebsites">8,234</div>
+                            <div class="metric-label">Websites Generated</div>
+                            <div class="metric-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                +15.7%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="metric-content">
+                            <div class="metric-value" id="averageScore">87.2</div>
+                            <div class="metric-label">Avg ATS Score</div>
+                            <div class="metric-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                +2.1%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Charts -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Usage Trends</h3>
+                            <div class="chart-controls">
+                                <button class="btn btn-sm active" data-period="7d">7D</button>
+                                <button class="btn btn-sm" data-period="30d">30D</button>
+                                <button class="btn btn-sm" data-period="90d">90D</button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="usageChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>ATS Score Distribution</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="scoreChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Industry Comparison -->
+                <div class="comparison-card">
+                    <div class="comparison-header">
+                        <h3>Industry Benchmarks</h3>
+                        <select id="industrySelector" class="form-select">
+                            <option value="technology">Technology</option>
+                            <option value="finance">Finance</option>
+                            <option value="healthcare">Healthcare</option>
+                            <option value="marketing">Marketing</option>
+                            <option value="engineering">Engineering</option>
+                        </select>
+                    </div>
+                    <div class="comparison-content">
+                        <div class="benchmark-item">
+                            <div class="benchmark-label">Technology Industry</div>
+                            <div class="benchmark-bar">
+                                <div class="benchmark-fill" style="width: 85%"></div>
+                                <span class="benchmark-value">85%</span>
+                            </div>
+                        </div>
+                        <div class="benchmark-item">
+                            <div class="benchmark-label">Your Score</div>
+                            <div class="benchmark-bar">
+                                <div class="benchmark-fill user-score" style="width: 92%"></div>
+                                <span class="benchmark-value">92%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- API Documentation -->
+    <section id="api-docs" class="api-docs">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">API Documentation</h2>
+                <p class="section-description">Integrate our services into your applications</p>
+            </div>
+            
+            <div class="api-grid">
+                <div class="api-card">
+                    <div class="api-header">
+                        <div class="api-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="api-title">
+                            <h3>ATS Analyzer API</h3>
+                            <span class="api-status online">Online</span>
+                        </div>
+                    </div>
+                    <div class="api-content">
+                        <p>Advanced resume analysis and ATS optimization API</p>
+                        <div class="api-endpoint">
+                            <code>POST /api/v1/analyze</code>
+                        </div>
+                        <div class="api-features">
+                            <span class="api-tag">REST API</span>
+                            <span class="api-tag">JSON</span>
+                            <span class="api-tag">Rate Limited</span>
+                        </div>
+                    </div>
+                    <div class="api-actions">
+                        <a href="http://localhost:8000/docs" target="_blank" class="btn btn-primary">
+                            <i class="fas fa-external-link-alt"></i>
+                            Open Swagger UI
+                        </a>
+                        <button class="btn btn-outline" onclick="copyEndpoint('ats')">
+                            <i class="fas fa-copy"></i>
+                            Copy Endpoint
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="api-card">
+                    <div class="api-header">
+                        <div class="api-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="api-title">
+                            <h3>Website Generator API</h3>
+                            <span class="api-status online">Online</span>
+                        </div>
+                    </div>
+                    <div class="api-content">
+                        <p>Dynamic website generation from resume uploads</p>
+                        <div class="api-endpoint">
+                            <code>POST /api/v1/upload</code>
+                        </div>
+                        <div class="api-features">
+                            <span class="api-tag">REST API</span>
+                            <span class="api-tag">File Upload</span>
+                            <span class="api-tag">Async</span>
+                        </div>
+                    </div>
+                    <div class="api-actions">
+                        <a href="http://localhost:8080/docs" target="_blank" class="btn btn-primary">
+                            <i class="fas fa-external-link-alt"></i>
+                            Open Swagger UI
+                        </a>
+                        <button class="btn btn-outline" onclick="copyEndpoint('website')">
+                            <i class="fas fa-copy"></i>
+                            Copy Endpoint
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="brand-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="brand-text">
+                        <span class="brand-name">Zex Platform</span>
+                        <span class="brand-tagline">AI Career Intelligence</span>
+                    </div>
+                </div>
+                
+                <div class="footer-links">
+                    <div class="footer-section">
+                        <h4>Services</h4>
+                        <a href="#zex-ats">ATS Analyzer</a>
+                        <a href="#website-gen">Website Generator</a>
+                        <a href="#analytics">Analytics</a>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Developers</h4>
+                        <a href="#api-docs">API Documentation</a>
+                        <a href="http://localhost:8000/docs" target="_blank">ATS API</a>
+                        <a href="http://localhost:8080/docs" target="_blank">Website API</a>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Support</h4>
+                        <a href="#docs">Documentation</a>
+                        <a href="#help">Help Center</a>
+                        <a href="#contact">Contact Us</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 Zex Platform. All rights reserved.</p>
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Service Modals -->
+    <div id="serviceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Service</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <iframe id="serviceFrame" src="" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/dashboard.js"></script>
+    <script src="assets/js/charts.js"></script>
+    <script src="assets/js/animations.js"></script>
+    <script src="assets/js/theme.js"></script>
+</body>
+</html>
