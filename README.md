@@ -702,7 +702,7 @@ This is the main page. It fetches `resume.json` via JavaScript and dynamically r
                         <p>LinkedIn: <a href="${data.contact.linkedin}" target="_blank">${data.contact.linkedin}</a></p>
                         <p>Location: ${data.contact.location}</p>
                     </div>
-                `;
+                `;8
 
                 // Render summary
                 const summary = document.getElementById('summary');
@@ -755,20 +755,20 @@ Sample data based on public profiles (edit this to customize everything).
 
 ```json
 {
-    "name": "Shiva Kumar Veldi",
+    "name": "XUserIdyll",
     "title": "Senior Software Engineer",
     "contact": {
-        "email": "shiva.veldi@example.com",
+        "email": "xuser@ai-assistant-idyll.com",
         "phone": "+91-XXXXXXXXXX",
-        "linkedin": "https://in.linkedin.com/in/shiva-kumar-veldi",
+        "linkedin": "https://in.linkedin.com/in/xuser",
         "location": "Bengaluru, India"
     },
-    "summary": "Graduated from the Indian Institute of Technology, Kharagpur with a dual degree in Computer Science. Currently contributing as a Senior Software Engineer at Samsung R&D Institute India, with expertise in machine learning, deep learning, and research.",
+    "summary": "Graduated from XXX with a degree in XXX. Currently contributing as a XXX Engineer at XXX XXX[place], with expertise in machine learning, deep learning, and research.",
     "experience": [
         {
             "role": "Senior Software Engineer",
-            "company": "Samsung R&D Institute India",
-            "location": "Bangalore",
+            "company": "XXX",
+            "location": "XXX",
             "dates": "July 2022 - Present (3+ years)",
             "description": [
                 "Developed and optimized machine learning models for R&D projects.",
@@ -780,7 +780,7 @@ Sample data based on public profiles (edit this to customize everything).
     "education": [
         {
             "degree": "Dual Degree in Computer Science and Engineering",
-            "institution": "Indian Institute of Technology, Kharagpur",
+            "institution": "XXX",
             "dates": "2017 - 2022"
         }
     ],
@@ -1174,173 +1174,6 @@ resume-site/
     </script>
 </body>
 </html>
-```
-
-#### `data/resume.json` (Updated with LaTeX Details)
-```json
-{
-    "name": "Shiva Kumar Veldi",
-    "title": "Senior Software Engineer",
-    "contact": {
-        "email": "shivaveldi160@gmail.com",
-        "phone": "+91-8158044333",
-        "linkedin": "https://www.linkedin.com/in/shiva-kumar-veldi",
-        "location": "Bangalore, India"
-    },
-    "summary": "Engineer with a dual degree from IIT Kharagpur in Computer Science and High-Performance Computing, and over 3 years of experience at Samsung R&D. Specialized in building low-latency, high-throughput systems that process millions of requests daily. Experienced in C++, parallel programming, and distributed infrastructure. Strong background in performance optimization, quantitative modeling, and large-scale system design. Adept at collaborating with global teams to deliver reliable, secure, and efficient software solutions. Seeking opportunities in high-frequency trading, quantitative finance, and HPC-driven platforms.",
-    "skills": [
-        "Languages: C++17/20, C, Python, Java, Bash, SQL",
-        "System Optimization: Multithreading, Lock-Free Data Structures, Zero-Copy, CPU Pinning",
-        "Performance Tools: Linux perf, Flame Graphs, Intel VTune, Sanitizers, Heaptrack",
-        "HPC/Parallel: OpenMP, MPI, CUDA, SIMD Vectorization",
-        "Cloud/Infra: AWS (ECS, ELB, DynamoDB, RDS, Lambda), Docker, Terraform, NGINX/Apache+mTLS",
-        "Quantitative Skills: Time-Series Analysis, Risk Modeling, Latency Control, Stochastic Processes"
-    ],
-    "experience": [
-        {
-            "role": "Senior Software Engineer",
-            "company": "Samsung Research Institute",
-            "location": "Bangalore",
-            "dates": "Jun 2022 – Present",
-            "description": [
-                "Scaled eSIM Discovery Service to handle 16M+ daily requests with 99.9% uptime through advanced system design and kernel-level optimizations.",
-                "Reduced tail latency by 40% via asynchronous I/O, lock-free communication, and optimized CPU utilization.",
-                "Migrated large-scale services from EC2 to ECS clusters, improving scaling efficiency and deployment speed.",
-                "Enhanced system security and reliability with enterprise-grade TLS configurations and continuous latency monitoring."
-            ]
-        },
-        {
-            "role": "Software Engineering Intern",
-            "company": "Samsung Research Institute",
-            "location": "Bangalore",
-            "dates": "May 2021 – Jul 2021",
-            "description": [
-                "Developed GPU-accelerated defect classification model, improving accuracy and throughput for large-scale image analysis."
-            ]
-        }
-    ],
-    "projects": [
-        {
-            "title": "High-Frequency Trading Prototypes",
-            "description": [
-                "Built lock-free C++20 order book enabling sub-microsecond updates for simulated trading environments.",
-                "Implemented market data handler for real-time feeds with robust gap recovery and zero-copy trading engine handoff.",
-                "Created event-driven backtesting framework with nanosecond-level precision."
-            ]
-        },
-        {
-            "title": "Pedestrian Intent Prediction (M.Tech Thesis)",
-            "description": [
-                "Real-time (26 FPS) YOLOv4+DeepSORT+LSTM pipeline; 97% accuracy."
-            ]
-        },
-        {
-            "title": "Automated Learning Science Analysis (B.Tech Project)",
-            "description": [
-                "Machine learning pipeline using Word2Vec and SVM; +15% over baseline."
-            ]
-        }
-    ],
-    "education": [
-        {
-            "degree": "Dual Degree (B.Tech Computer Science & Engineering + M.Tech High-Performance & Parallel Computing)",
-            "institution": "Indian Institute of Technology, Kharagpur (IIT KGP)",
-            "dates": "Graduation: 2022",
-            "coursework": "Relevant Coursework: Algorithms, Operating Systems, Distributed Systems, High-Performance Computing, Probability & Statistics, Finance, Machine Learning, Deep Learning."
-        }
-    ],
-    "achievements": [
-        "Samsung Excellence Award – Super Tech (Development to Market).",
-        "Certified in Samsung Software Competency (Advanced + Professional).",
-        "AIR 1187 (JEE Advanced), AIR 2948 (JEE Mains)."
-    ]
-}
-```
-
-#### `data/resume/latex/resume.tex` (Your Provided LaTeX)
-```latex
-\documentclass[a4paper,10pt]{article}
-\usepackage[margin=0.7in]{geometry}
-\usepackage{enumitem}
-\usepackage{titlesec}
-\usepackage{hyperref}
-\usepackage{fontawesome}
-
-% Formatting tweaks
-\titleformat{\section}{\large\bfseries}{}{0em}{}[\titlerule]
-\setlist[itemize]{noitemsep, topsep=1pt, left=0pt}
-
-\begin{document}
-
-\begin{center}
-{\LARGE Shiva Kumar Veldi} \\[4pt]
-Senior Software Engineer \\[4pt]
-\faMapMarker \, Bangalore, India \quad
-\faPhone \, +91-8158044333 \quad
-\faEnvelope \, \href{mailto:shivaveldi160@gmail.com}{shivaveldi160@gmail.com} \quad
-\faLinkedin \, \href{https://www.linkedin.com/in/shiva-kumar-veldi}{shiva-kumar-veldi}
-\end{center}
-
-% -------- Summary --------
-\section*{Professional Summary}
-Engineer with a dual degree from IIT Kharagpur in Computer Science and High-Performance Computing, and over 3 years of experience at Samsung R\&D.  
-Specialized in building low-latency, high-throughput systems that process millions of requests daily. Experienced in C++, parallel programming, and distributed infrastructure.  
-Strong background in performance optimization, quantitative modeling, and large-scale system design. Adept at collaborating with global teams to deliver reliable, secure, and efficient software solutions.  
-Seeking opportunities in high-frequency trading, quantitative finance, and HPC-driven platforms.
-
-% -------- Skills --------
-\section*{Core Competencies}
-Languages: C++17/20, C, Python, Java, Bash, SQL \\
-System Optimization: Multithreading, Lock-Free Data Structures, Zero-Copy, CPU Pinning \\
-Performance Tools: Linux perf, Flame Graphs, Intel VTune, Sanitizers, Heaptrack \\
-HPC/Parallel: OpenMP, MPI, CUDA, SIMD Vectorization \\
-Cloud/Infra: AWS (ECS, ELB, DynamoDB, RDS, Lambda), Docker, Terraform, NGINX/Apache+mTLS \\
-Quantitative Skills: Time-Series Analysis, Risk Modeling, Latency Control, Stochastic Processes
-
-% -------- Experience --------
-\section*{Professional Experience}
-\textbf{Samsung Research Institute, Bangalore} \hfill Jun 2022 – Present \\
-Senior Software Engineer  
-\begin{itemize}
-  \item Scaled eSIM Discovery Service to handle 16M+ daily requests with 99.9\% uptime through advanced system design and kernel-level optimizations.
-  \item Reduced tail latency by 40\% via asynchronous I/O, lock-free communication, and optimized CPU utilization.
-  \item Migrated large-scale services from EC2 to ECS clusters, improving scaling efficiency and deployment speed.
-  \item Enhanced system security and reliability with enterprise-grade TLS configurations and continuous latency monitoring.
-\end{itemize}
-
-\textbf{Samsung Research Institute, Bangalore} \hfill May 2021 – Jul 2021 \\
-Software Engineering Intern  
-\begin{itemize}
-  \item Developed GPU-accelerated defect classification model, improving accuracy and throughput for large-scale image analysis.
-\end{itemize}
-
-% -------- Projects --------
-\section*{Selected Projects}
-\textbf{High-Frequency Trading Prototypes}  
-\begin{itemize}
-  \item Built lock-free C++20 order book enabling sub-microsecond updates for simulated trading environments.
-  \item Implemented market data handler for real-time feeds with robust gap recovery and zero-copy trading engine handoff.
-  \item Created event-driven backtesting framework with nanosecond-level precision.
-\end{itemize}
-
-Pedestrian Intent Prediction (M.Tech Thesis) – Real-time (26 FPS) YOLOv4+DeepSORT+LSTM pipeline; 97\% accuracy.  
-Automated Learning Science Analysis (B.Tech Project) – Machine learning pipeline using Word2Vec and SVM; +15\% over baseline.
-
-% -------- Education --------
-\section*{Education}
-\textbf{Indian Institute of Technology, Kharagpur (IIT KGP)} \hfill Graduation: 2022 \\
-Dual Degree (B.Tech Computer Science \& Engineering + M.Tech High-Performance \& Parallel Computing) \\
-Relevant Coursework: Algorithms, Operating Systems, Distributed Systems, High-Performance Computing, Probability \& Statistics, Finance, Machine Learning, Deep Learning.
-
-% -------- Achievements --------
-\section*{Achievements \& Honors}
-\begin{itemize}
-  \item Samsung Excellence Award – \textbf{Super Tech (Development to Market)}.
-  \item Certified in Samsung Software Competency (Advanced + Professional).
-  \item AIR 1187 (JEE Advanced), AIR 2948 (JEE Mains).
-\end{itemize}
-
-\end{document}
 ```
 
 #### `assets/styles.css` (Updated with Light Theme and Print Media)
