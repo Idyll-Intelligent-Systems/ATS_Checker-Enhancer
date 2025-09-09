@@ -24,8 +24,10 @@ class Colors:
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
     RED = '\033[91m'
+    WHITE = '\033[97m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 def print_colored(text: str, color: str = Colors.ENDC):
     """Print colored text that works on all platforms."""
@@ -270,7 +272,7 @@ class UniversalDeployer:
             docker_compose_path = self.project_root / "docker-compose.yml"
             if docker_compose_path.exists():
                 try:
-                    run_command("docker-compose up -d postgres redis")
+                    run_command("docker-compose up -d db redis")
                     print_colored("✅ PostgreSQL and Redis started", Colors.GREEN)
                 except Exception:
                     print_colored("⚠️  Docker setup failed, falling back to SQLite", Colors.YELLOW)
@@ -440,7 +442,7 @@ if __name__ == "__main__":
             docker_compose_path = self.project_root / "docker-compose.yml"
             if docker_compose_path.exists():
                 print_colored("Starting services with Docker Compose...", Colors.YELLOW)
-                run_command("docker-compose up -d")
+                run_command("docker-compose up -d db redis")
                 print_colored("✅ Docker services started", Colors.GREEN)
             else:
                 print_colored("⚠️  docker-compose.yml not found", Colors.YELLOW)
