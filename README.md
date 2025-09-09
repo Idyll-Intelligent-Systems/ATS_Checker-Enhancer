@@ -587,12 +587,251 @@ Yes, I'd like to add those extras! Here's quick additions:
   }
   ```
 
-Let me know if you need more tweaks, actual ZIP generation (I can describe how), or integration with the previous resume checker!
+### Updated Static Resume Site with Extras and LaTeX Integration
 
+I've updated the static resume site based on your request. Key changes:
+- **Incorporated the LaTeX resume**: Added it as `data/resume/latex/resume.tex`. You can compile this to PDF using tools like Overleaf (online, free), pdflatex (local TeX installation), or TeXShop. Once compiled, place the resulting `resume.pdf` in the root or `assets/` folder, and the site now includes a "Download PDF Resume" link in the header that points to `assets/resume.pdf`.
+- **Matching PDF Export**: Added a "Download as PDF" button that triggers the browser's print-to-PDF functionality. I've also added print-specific CSS to make the PDF look clean (white background, black text, no shadows/buttons).
+- **Contact Form (Netlify Forms)**: Added a simple contact form section. If you host on Netlify, it will automatically handle submissions (sends emails to your linked email). No extra setup needed beyond deploying to Netlify.
+- **Google Analytics**: Added placeholder code in `<head>`. Replace `G-XXXXXXXXXX` with your actual Measurement ID (from Google Analytics setup).
+- **Theme Toggle**: Added a button to switch between dark (default) and light themes. It toggles a CSS class on the body.
+- **Updated resume.json**: I've parsed and expanded the sample data using the details from your provided LaTeX code for accuracy (e.g., added projects, achievements, more skills, updated contact info, expanded summary/experience). This makes the site content match the LaTeX closely.
+- **Other tweaks**: Made the site more recruiter-friendly with better SEO meta tags, added a projects and achievements section in index.html (and rendered them from JSON). The design remains dark/modern/professional.
 
+The site is still fully static (HTML/CSS/JS only, no frameworks), loads data from `data/resume.json`, and is responsive/SEO-optimized.
 
-Store this in data/resume/latex
+#### Updated Folder Structure
+```
+resume-site/
+├── index.html
+├── data/
+│   ├── resume.json
+│   └── resume/
+│       └── latex/
+│           └── resume.tex
+├── assets/
+│   ├── styles.css
+│   ├── favicon.svg
+│   └── resume.pdf  (add this after compiling the LaTeX)
+├── .github/
+│   └── workflows/
+│       └── pages.yml
+└── build.py  (optional helper script, updated to validate LaTeX path)
+```
 
+#### `index.html` (Updated with Extras)
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Professional resume of Shiva Kumar Veldi, Senior Software Engineer specializing in high-performance computing and software optimization.">
+    <meta name="keywords" content="Shiva Kumar Veldi, resume, software engineer, Samsung, IIT Kharagpur, HPC, C++, machine learning">
+    <title>Shiva Kumar Veldi - Resume</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header id="header">
+            <button id="theme-toggle">Toggle Theme</button>
+            <button onclick="window.print()">Download as PDF</button>
+            <a href="assets/resume.pdf" download>Download PDF Resume</a>
+        </header>
+        <section id="summary"></section>
+        <section id="skills"></section>
+        <section id="experience"></section>
+        <section id="projects"></section>
+        <section id="education"></section>
+        <section id="achievements"></section>
+        <section id="contact-form">
+            <h3>Contact Me</h3>
+            <form name="contact" method="POST" data-netlify="true">
+                <input type="hidden" name="form-name" value="contact">
+                <p><label>Name: <input type="text" name="name" required></label></p>
+                <p><label>Email: <input type="email" name="email" required></label></p>
+                <p><label>Message: <textarea name="message" required></textarea></label></p>
+                <p><button type="submit">Send</button></p>
+            </form>
+        </section>
+    </div>
+    <script>
+        fetch('data/resume.json')
+            .then(response => response.json())
+            .then(data => {
+                // Render header
+                const header = document.getElementById('header');
+                header.innerHTML = `
+                    <h1>${data.name}</h1>
+                    <h2>${data.title}</h2>
+                    <div class="contact">
+                        <p>Email: <a href="mailto:${data.contact.email}">${data.contact.email}</a></p>
+                        <p>Phone: ${data.contact.phone}</p>
+                        <p>LinkedIn: <a href="${data.contact.linkedin}" target="_blank">${data.contact.linkedin}</a></p>
+                        <p>Location: ${data.contact.location}</p>
+                    </div>
+                ` + header.innerHTML;  // Append buttons/links after contact
+
+                // Render summary
+                document.getElementById('summary').innerHTML = `
+                    <h3>Professional Summary</h3>
+                    <p>${data.summary}</p>
+                `;
+
+                // Render skills
+                const skills = document.getElementById('skills');
+                skills.innerHTML = '<h3>Core Competencies</h3><ul>';
+                data.skills.forEach(skill => { skills.innerHTML += `<li>${skill}</li>`; });
+                skills.innerHTML += '</ul>';
+
+                // Render experience
+                const experience = document.getElementById('experience');
+                experience.innerHTML = '<h3>Professional Experience</h3>';
+                data.experience.forEach(exp => {
+                    experience.innerHTML += `
+                        <div class="item">
+                            <h4>${exp.role} at ${exp.company}</h4>
+                            <p>${exp.location} | ${exp.dates}</p>
+                            <ul>${exp.description.map(desc => `<li>${desc}</li>`).join('')}</ul>
+                        </div>
+                    `;
+                });
+
+                // Render projects
+                const projects = document.getElementById('projects');
+                projects.innerHTML = '<h3>Selected Projects</h3>';
+                data.projects.forEach(proj => {
+                    projects.innerHTML += `
+                        <div class="item">
+                            <h4>${proj.title}</h4>
+                            <ul>${proj.description.map(desc => `<li>${desc}</li>`).join('')}</ul>
+                        </div>
+                    `;
+                });
+
+                // Render education
+                const education = document.getElementById('education');
+                education.innerHTML = '<h3>Education</h3>';
+                data.education.forEach(edu => {
+                    education.innerHTML += `
+                        <div class="item">
+                            <h4>${edu.degree}</h4>
+                            <p>${edu.institution} | ${edu.dates}</p>
+                            <p>${edu.coursework}</p>
+                        </div>
+                    `;
+                });
+
+                // Render achievements
+                const achievements = document.getElementById('achievements');
+                achievements.innerHTML = '<h3>Achievements & Honors</h3><ul>';
+                data.achievements.forEach(ach => { achievements.innerHTML += `<li>${ach}</li>`; });
+                achievements.innerHTML += '</ul>';
+            })
+            .catch(error => console.error('Error loading resume data:', error));
+
+        // Theme toggle
+        const toggle = document.getElementById('theme-toggle');
+        toggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+        });
+    </script>
+</body>
+</html>
+```
+
+#### `data/resume.json` (Updated with LaTeX Details)
+```json
+{
+    "name": "Shiva Kumar Veldi",
+    "title": "Senior Software Engineer",
+    "contact": {
+        "email": "shivaveldi160@gmail.com",
+        "phone": "+91-8158044333",
+        "linkedin": "https://www.linkedin.com/in/shiva-kumar-veldi",
+        "location": "Bangalore, India"
+    },
+    "summary": "Engineer with a dual degree from IIT Kharagpur in Computer Science and High-Performance Computing, and over 3 years of experience at Samsung R&D. Specialized in building low-latency, high-throughput systems that process millions of requests daily. Experienced in C++, parallel programming, and distributed infrastructure. Strong background in performance optimization, quantitative modeling, and large-scale system design. Adept at collaborating with global teams to deliver reliable, secure, and efficient software solutions. Seeking opportunities in high-frequency trading, quantitative finance, and HPC-driven platforms.",
+    "skills": [
+        "Languages: C++17/20, C, Python, Java, Bash, SQL",
+        "System Optimization: Multithreading, Lock-Free Data Structures, Zero-Copy, CPU Pinning",
+        "Performance Tools: Linux perf, Flame Graphs, Intel VTune, Sanitizers, Heaptrack",
+        "HPC/Parallel: OpenMP, MPI, CUDA, SIMD Vectorization",
+        "Cloud/Infra: AWS (ECS, ELB, DynamoDB, RDS, Lambda), Docker, Terraform, NGINX/Apache+mTLS",
+        "Quantitative Skills: Time-Series Analysis, Risk Modeling, Latency Control, Stochastic Processes"
+    ],
+    "experience": [
+        {
+            "role": "Senior Software Engineer",
+            "company": "Samsung Research Institute",
+            "location": "Bangalore",
+            "dates": "Jun 2022 – Present",
+            "description": [
+                "Scaled eSIM Discovery Service to handle 16M+ daily requests with 99.9% uptime through advanced system design and kernel-level optimizations.",
+                "Reduced tail latency by 40% via asynchronous I/O, lock-free communication, and optimized CPU utilization.",
+                "Migrated large-scale services from EC2 to ECS clusters, improving scaling efficiency and deployment speed.",
+                "Enhanced system security and reliability with enterprise-grade TLS configurations and continuous latency monitoring."
+            ]
+        },
+        {
+            "role": "Software Engineering Intern",
+            "company": "Samsung Research Institute",
+            "location": "Bangalore",
+            "dates": "May 2021 – Jul 2021",
+            "description": [
+                "Developed GPU-accelerated defect classification model, improving accuracy and throughput for large-scale image analysis."
+            ]
+        }
+    ],
+    "projects": [
+        {
+            "title": "High-Frequency Trading Prototypes",
+            "description": [
+                "Built lock-free C++20 order book enabling sub-microsecond updates for simulated trading environments.",
+                "Implemented market data handler for real-time feeds with robust gap recovery and zero-copy trading engine handoff.",
+                "Created event-driven backtesting framework with nanosecond-level precision."
+            ]
+        },
+        {
+            "title": "Pedestrian Intent Prediction (M.Tech Thesis)",
+            "description": [
+                "Real-time (26 FPS) YOLOv4+DeepSORT+LSTM pipeline; 97% accuracy."
+            ]
+        },
+        {
+            "title": "Automated Learning Science Analysis (B.Tech Project)",
+            "description": [
+                "Machine learning pipeline using Word2Vec and SVM; +15% over baseline."
+            ]
+        }
+    ],
+    "education": [
+        {
+            "degree": "Dual Degree (B.Tech Computer Science & Engineering + M.Tech High-Performance & Parallel Computing)",
+            "institution": "Indian Institute of Technology, Kharagpur (IIT KGP)",
+            "dates": "Graduation: 2022",
+            "coursework": "Relevant Coursework: Algorithms, Operating Systems, Distributed Systems, High-Performance Computing, Probability & Statistics, Finance, Machine Learning, Deep Learning."
+        }
+    ],
+    "achievements": [
+        "Samsung Excellence Award – Super Tech (Development to Market).",
+        "Certified in Samsung Software Competency (Advanced + Professional).",
+        "AIR 1187 (JEE Advanced), AIR 2948 (JEE Mains)."
+    ]
+}
+```
+
+#### `data/resume/latex/resume.tex` (Your Provided LaTeX)
+```latex
 \documentclass[a4paper,10pt]{article}
 \usepackage[margin=0.7in]{geometry}
 \usepackage{enumitem}
@@ -675,3 +914,223 @@ Relevant Coursework: Algorithms, Operating Systems, Distributed Systems, High-Pe
 \end{itemize}
 
 \end{document}
+```
+
+#### `assets/styles.css` (Updated with Light Theme and Print Media)
+```css
+body {
+    background-color: #121212;
+    color: #e0e0e0;
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+h1, h2, h3, h4 {
+    color: #bbdefb;
+    margin-bottom: 10px;
+}
+
+h1 { font-size: 2.5em; }
+h2 { font-size: 1.8em; }
+h3 { font-size: 1.5em; }
+h4 { font-size: 1.2em; }
+
+.contact p {
+    margin: 5px 0;
+}
+
+a {
+    color: #64b5f6;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.item {
+    margin-bottom: 20px;
+}
+
+ul {
+    list-style-type: disc;
+    padding-left: 20px;
+}
+
+button {
+    background-color: #64b5f6;
+    color: #121212;
+    border: none;
+    padding: 10px 20px;
+    margin: 10px 5px 10px 0;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+button:hover {
+    background-color: #bbdefb;
+}
+
+form label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+form input, form textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    background-color: #2c2c2c;
+    color: #e0e0e0;
+    border: 1px solid #444;
+}
+
+.light-theme {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+.light-theme .container {
+    background-color: #f0f0f0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.light-theme h1, .light-theme h2, .light-theme h3, .light-theme h4 {
+    color: #1976d2;
+}
+
+.light-theme a {
+    color: #1976d2;
+}
+
+.light-theme button {
+    background-color: #1976d2;
+    color: #ffffff;
+}
+
+.light-theme button:hover {
+    background-color: #1565c0;
+}
+
+.light-theme form input, .light-theme form textarea {
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #ccc;
+}
+
+@media (max-width: 600px) {
+    .container {
+        margin: 20px;
+        padding: 15px;
+    }
+}
+
+@media print {
+    body, .light-theme { background: white; color: black; }
+    .container { box-shadow: none; background: white; margin: 0; padding: 0; }
+    a { color: black; text-decoration: none; }
+    button, #contact-form, #theme-toggle { display: none; }
+    .item, section { page-break-inside: avoid; }
+}
+```
+
+#### `assets/favicon.svg` (Unchanged)
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <rect width="100" height="100" fill="#121212"/>
+    <text x="10" y="70" font-size="60" fill="#bbdefb">SV</text>
+</svg>
+```
+
+#### `.github/workflows/pages.yml` (Unchanged)
+```yaml
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: .  # Deploy the root folder
+```
+
+#### `build.py` (Updated to Check LaTeX Path)
+```python
+import json
+import os
+import http.server
+import socketserver
+
+# Notes:
+# - Edit data/resume.json for content changes.
+# - Compile data/resume/latex/resume.tex to PDF and add as assets/resume.pdf.
+# - Run this script to validate JSON, check LaTeX file, and start a local server for preview.
+# - To preview: python build.py
+# - Access at http://localhost:8000
+
+def validate_json():
+    try:
+        with open('data/resume.json', 'r') as f:
+            json.load(f)
+        print("resume.json is valid.")
+    except Exception as e:
+        print(f"Error in resume.json: {e}")
+
+def check_latex():
+    latex_path = 'data/resume/latex/resume.tex'
+    if os.path.exists(latex_path):
+        print(f"{latex_path} exists.")
+    else:
+        print(f"Warning: {latex_path} not found.")
+
+def start_server():
+    PORT = 8000
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    Handler = http.server.SimpleHTTPRequestHandler
+    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        print(f"Serving at http://localhost:{PORT}")
+        httpd.serve_forever()
+
+if __name__ == "__main__":
+    validate_json()
+    check_latex()
+    start_server()
+```
+
+### How to Package and Publish
+1. Create the folder structure and files as above.
+2. Compile `resume.tex` to `resume.pdf` (use Overleaf: import the tex, export PDF).
+3. Add `resume.pdf` to `assets/`.
+4. Zip the folder: `resume_site_updated.zip`.
+5. **Download equivalent**: Copy-paste into files on your machine.
+
+#### Publishing to GitHub Pages
+1. Create/update GitHub repo (e.g., `shiva-veldi-resume`).
+2. Push contents to `main`.
+3. Settings > Pages > Source: GitHub Actions (deploys auto).
+4. Live at: https://<your-username>.github.io/shiva-veldi-resume/.
+
+#### Live Sandbox/Alternative Hosting
+- **Netlify**: Drag folder to netlify.com/drop (enables forms auto).
+- **Vercel/Cloudflare Pages**: Similar drag-and-drop.
+- Local preview: Run `python build.py`.
+
+If you need further tweaks (e.g., add sections, custom icons, or integrate with the resume checker app), let me know!
