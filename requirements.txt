@@ -22,7 +22,6 @@ cryptography==41.0.7
 
 # File handling and processing
 aiofiles==23.2.1
-python-multipart==0.0.6
 
 # Document processing - Core formats
 PyMuPDF==1.23.8
