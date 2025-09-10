@@ -82,7 +82,7 @@ function showInsights() {
 
 // Job Matching Demo
 function findMatchingJobs() {
-    const button = event.target;
+    const button = event?.target || this; // Support calls without event context
     const originalText = button.innerHTML;
     
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI Processing...';
