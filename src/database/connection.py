@@ -5,7 +5,7 @@ Async database connection handling with connection pooling.
 
 import asyncio
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 import logging
 
 from sqlalchemy import create_engine, pool
@@ -14,6 +14,14 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.core.config import settings, get_database_url
+
+__all__ = [
+    "get_database",
+    "get_database_session",
+    "get_sync_session",
+    "DatabaseManager",
+    "check_database_health",
+]
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -148,16 +156,24 @@ def get_sync_session():
 
 class DatabaseManager:
     """Database management utilities."""
-    
+
     def __init__(self):
         self.initialized = False
-    
+
     async def initialize(self):
         """Initialize database connections."""
         if not self.initialized:
             initialize_database()
             self.initialized = True
             logger.info("Database manager initialized")
+
+    async def connect(self) -> None:
+        """Public entry point to establish database connections."""
+        await self.initialize()
+
+    async def disconnect(self) -> None:
+        """Close database connections and dispose of engines."""
+        await self.cleanup()
     
     async def check_connection(self) -> bool:
         """Check if database connection is healthy."""
@@ -316,8 +332,15 @@ async def check_database_health() -> dict:
     return health_info
 
 
-# Global database manager instance
-db_manager = DatabaseManager()
+_db: Optional[DatabaseManager] = None
+
+
+def get_database() -> DatabaseManager:
+    """Lazy getter for a reusable :class:`DatabaseManager` instance."""
+    global _db
+    if _db is None:
+        _db = DatabaseManager()
+    return _db
 
 
 # Utility functions for common operations
@@ -361,7 +384,3 @@ async def get_table_info(table_name: str) -> dict:
     except Exception as e:
         logger.error(f"Error getting table info for {table_name}: {e}")
         return {"error": str(e)}
-
-
-# Initialize database on import
-initialize_database()
