@@ -713,7 +713,7 @@
             const resultsDiv = document.getElementById('job-results');
             
             // Show loading effect
-            const button = event.target;
+            const button = event?.target || this; // Use event target or fallback for flexibility
             const originalText = button.innerHTML;
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
             button.disabled = true;

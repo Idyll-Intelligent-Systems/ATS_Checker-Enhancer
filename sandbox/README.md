@@ -46,6 +46,8 @@ function findMatchingJobs() {
 // Additional interactive features...
 ```
 
+Note: Event handlers such as `findJobs` and `findMatchingJobs` resolve the button element with `event?.target || this` so they can be invoked via DOM events or direct function calls.
+
 ## 🎯 Demo Features
 
 ### Interactive Resume Analysis
