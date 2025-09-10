@@ -976,6 +976,8 @@ Yes, I'd like to add those extras! Here's quick additions:
   ```
   Netlify auto-detects and handles forms (emails to you).
 
+- **Custom Contact Endpoint**: The portfolio's contact form can submit to a custom backend. Set the `data-endpoint` attribute on the form or define a `CONTACT_FORM_ENDPOINT` global variable to point to your API route (defaults to `/api/contact`). Implement a `POST /api/contact` endpoint in your backend to handle these submissions.
+
 - **Google Analytics**: Add this to <head> in index.html (replace UA-XXXXX-Y with your tracking ID):
   ```html
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-XXXXX-Y"></script>
