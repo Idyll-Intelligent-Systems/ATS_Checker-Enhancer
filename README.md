@@ -224,6 +224,23 @@ JWT_SECRET_KEY=your-jwt-secret
 ALLOWED_ORIGINS=http://localhost:3000
 ```
 
+### Base URL Configuration
+
+`BASE_URL` defines the root path used by the dashboard’s frontend. Deployment scripts such as `deploy.sh` or `deploy_web.py` replace a `__BASE_URL__` placeholder in `dashboard/index.html` with this value before publishing.
+
+**Sample values**
+
+- Local: `BASE_URL=http://localhost:8000`
+- Staging: `BASE_URL=https://staging.example.com`
+- Production: `BASE_URL=https://example.com`
+
+**Deployment**
+
+```bash
+export BASE_URL=https://staging.example.com
+./deploy.sh  # script injects BASE_URL into dashboard/index.html
+```
+
 ### Database Schema
 
 The application uses PostgreSQL with the following core tables:
