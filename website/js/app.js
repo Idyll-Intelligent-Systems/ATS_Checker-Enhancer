@@ -209,8 +209,12 @@ function initializeContactForm() {
             submitButton.disabled = true;
             
             try {
-                // If using Netlify forms
-                const response = await fetch('/', {
+                // Determine submission endpoint
+                const apiEndpoint = contactForm.getAttribute('data-endpoint') ||
+                    window.CONTACT_FORM_ENDPOINT || '/api/contact';
+
+                // Submit form data to configured endpoint (expects POST /api/contact)
+                const response = await fetch(apiEndpoint, {
                     method: 'POST',
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
                     body: encode({
@@ -228,7 +232,11 @@ function initializeContactForm() {
                 
             } catch (error) {
                 console.error('Error submitting form:', error);
-                showError('Failed to send message. Please try again or contact me directly.');
+                if (error instanceof TypeError) {
+                    showError('Network error. Please check your connection and try again.');
+                } else {
+                    showError('Failed to send message. Please try again or contact me directly.');
+                }
             } finally {
                 // Restore button state
                 submitButton.innerHTML = originalText;
