@@ -197,6 +197,23 @@ The universal deployment script automatically configures:
 - `MAX_FILE_SIZE`: 50MB desktop, 10MB mobile
 - `SUPPORTED_FORMATS`: All formats or mobile-optimized subset
 
+### **Base URL Configuration**
+
+`BASE_URL` defines the root path served by the dashboard frontend. Deployment scripts like `deploy.sh` or `deploy_web.py` replace a `__BASE_URL__` placeholder in `dashboard/index.html` with this value before publishing.
+
+**Sample values**
+
+- Local: `BASE_URL=http://localhost:8000`
+- Staging: `BASE_URL=https://staging.example.com`
+- Production: `BASE_URL=https://example.com`
+
+**Deployment**
+
+```bash
+export BASE_URL=https://staging.example.com
+./deploy.sh  # script injects BASE_URL into dashboard/index.html
+```
+
 ### **Platform Optimizations**
 - **Desktop**: Full feature set with Docker orchestration
 - **Mobile**: Battery-efficient processing with reduced features
