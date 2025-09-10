@@ -478,7 +478,7 @@
                     </select>
                 </div>
                 
-                <button class="btn" style="width: 100%;" onclick="findJobs()">
+                <button class="btn" style="width: 100%;" onclick="findJobs(event)">
                     <i class="fas fa-search"></i> Find Matching Jobs
                 </button>
                 
@@ -709,11 +709,11 @@
             }, 50);
         }
         
-        function findJobs() {
+        function findJobs(event) {
             const resultsDiv = document.getElementById('job-results');
-            
+
             // Show loading effect
-            const button = event.target;
+            const button = event?.target || this;
             const originalText = button.innerHTML;
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
             button.disabled = true;
