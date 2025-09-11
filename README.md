@@ -1,5 +1,17 @@
 # ZeX-ATS-AI: Enhanced Multi-Format Resume Analysis Platform
 
+> CONSOLIDATION NOTE (v3 Unified Service)
+> The platform has been unified into a single FastAPI application at `main.py` (project root). Legacy entrypoints (`src/web/main.py`, `website_generator_api.py`, `zex_service.py`) now raise deprecation errors. Use:
+>   python main.py
+> or for auto-reload:
+>   uvicorn main:app --reload
+> Minimal dependency install (core features only):
+>   pip install -r minimal_requirements.txt
+> Full feature install (heavier, multi-modal):
+>   pip install -r requirements.txt
+> If low disk space prevents installing spaCy models, the service will still run with degraded NLP until you run:
+>   python -m spacy download en_core_web_sm
+
 <div align="center">
   <h3>🚀 AI-Powered Multi-Format Document Processing & ATS Optimization</h3>
   <p><em>Advanced resume analysis supporting 16 file formats including PDF, DOCX, images, audio, and video files</em></p>
@@ -431,6 +443,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   <p><em>Transforming careers through intelligent resume optimization</em></p>
 </div>
 
+# ZeX Unified Platform (v3 Consolidation Notice)
+
+> NOTE: The platform has been consolidated into a single FastAPI service. Use `python main.py` (root) as the only entrypoint. Legacy entrypoints (`src/web/main.py`, `website_generator_api.py`, `zex_service.py`) are deprecated and now raise errors if executed.
+
 Save this as `app.py` in a new directory. You'll need to install the dependencies: `pip install streamlit pdfplumber nltk language-tool-python`.
 
 ```python
@@ -661,7 +677,7 @@ resume-site/
 ├── .github/
 │   └── workflows/
 │       └── pages.yml
-└── build.py  (optional helper script)
+└── build.py  (notes + convenience)
 ```
 
 #### `index.html`
@@ -849,385 +865,6 @@ ul {
     padding-left: 20px;
 }
 
-@media (max-width: 600px) {
-    .container {
-        margin: 20px;
-        padding: 15px;
-    }
-}
-```
-
-#### `assets/favicon.svg`
-Simple SVG icon (a professional "SV" monogram).
-
-```svg
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-    <rect width="100" height="100" fill="#121212"/>
-    <text x="10" y="70" font-size="60" fill="#bbdefb">SV</text>
-</svg>
-```
-
-#### `.github/workflows/pages.yml`
-GitHub Actions workflow for auto-deploy to GitHub Pages on push to main.
-
-```yaml
-name: Deploy to GitHub Pages
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          folder: .  # Deploy the root folder
-```
-
-#### `build.py`
-Optional Python script with notes and a convenience function to validate JSON or preview locally (run `python build.py` to check).
-
-```python
-import json
-import http.server
-import socketserver
-import os
-
-# Notes:
-# - Edit data/resume.json for content changes.
-# - Run this script to validate JSON and start a local server for preview.
-# - To preview: python build.py
-# - Access at http://localhost:8000
-
-def validate_json():
-    try:
-        with open('data/resume.json', 'r') as f:
-            json.load(f)
-        print("resume.json is valid.")
-    except Exception as e:
-        print(f"Error in resume.json: {e}")
-
-def start_server():
-    PORT = 8000
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    Handler = http.server.SimpleHTTPRequestHandler
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        print(f"Serving at http://localhost:{PORT}")
-        httpd.serve_forever()
-
-if __name__ == "__main__":
-    validate_json()
-    start_server()
-```
-
-### How to Package and Publish
-1. Create the folder structure and files as above.
-2. Zip the folder: `resume_site.zip` (you can do this manually or via command line).
-3. **Download equivalent**: Since I can't attach files here, copy-paste the code into files on your machine.
-
-#### Publishing to GitHub Pages
-1. Create a new GitHub repo (e.g., `xuser-idyll-resume`).
-2. Unzip (or add) the contents to the repo root and push to `main`.
-3. In GitHub: Go to Settings > Pages > Source: GitHub Actions. The workflow will run automatically on push.
-4. Site live at: https://<your-username>.github.io/xuser-idyll-resume/.
-
-#### Optional: Live Sandbox/Alternative Hosting
-- Host on Netlify/Vercel/Cloudflare Pages: Create an account, drag-and-drop the folder (no build command needed—it's static).
-- For local testing: Run `python build.py` to preview.
-
-#### Customization
-- All text/content: Edit `data/resume.json` (add more sections like "projects" and update index.html script if needed).
-- Theme: Tweak colors/fonts in `assets/styles.css` (e.g., change `--background-color: #121212;` if you add variables).
-- SEO: Already includes meta tags; add more if needed.
-
-Yes, I'd like to add those extras! Here's quick additions:
-
-- **Matching PDF Export**: Add this script to index.html (at the end of <body>) for a "Download PDF" button. It uses browser print-to-PDF (for simplicity; no server needed). Style the page with `@media print` in CSS for PDF-friendliness.
-
-  ```html
-  <button onclick="window.print()">Download as PDF</button>
-  ```
-  In styles.css, add:
-  ```css
-  @media print {
-      body { background: white; color: black; }
-      .container { box-shadow: none; }
-      a { color: black; text-decoration: none; }
-      button { display: none; }
-  }
-  ```
-
-- **Contact Form (Netlify Forms)**: If hosting on Netlify, add this to index.html (in a new <section id="contact-form">):
-  ```html
-  <section id="contact-form">
-      <h3>Contact Me</h3>
-      <form name="contact" method="POST" data-netlify="true">
-          <input type="hidden" name="form-name" value="contact">
-          <p><label>Name: <input type="text" name="name"></label></p>
-          <p><label>Email: <input type="email" name="email"></label></p>
-          <p><label>Message: <textarea name="message"></textarea></label></p>
-          <p><button type="submit">Send</button></p>
-      </form>
-  </section>
-  ```
-  Netlify auto-detects and handles forms (emails to you).
-
-- **Google Analytics**: Add this to <head> in index.html (replace UA-XXXXX-Y with your tracking ID):
-  ```html
-  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-XXXXX-Y"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'UA-XXXXX-Y');
-  </script>
-  ```
-
-- **Theme Toggle**: Add a button and JS for light/dark toggle. In index.html (end of <body>):
-  ```html
-  <button id="theme-toggle">Toggle Theme</button>
-  <script>
-      const toggle = document.getElementById('theme-toggle');
-      toggle.addEventListener('click', () => {
-          document.body.classList.toggle('light-theme');
-      });
-  </script>
-  ```
-  In styles.css, add:
-  ```css
-  .light-theme {
-      background-color: #ffffff;
-      color: #000000;
-  }
-  .light-theme .container {
-      background-color: #f0f0f0;
-  }
-  .light-theme h1, .light-theme h2, .light-theme h3, .light-theme h4 {
-      color: #1976d2;
-  }
-  .light-theme a {
-      color: #1976d2;
-  }
-  ```
-
-### Updated Static Resume Site with Extras and LaTeX Integration
-
-I've updated the static resume site based on your request. Key changes:
-- **Incorporated the LaTeX resume**: Added it as `data/resume/latex/resume.tex`. You can compile this to PDF using tools like Overleaf (online, free), pdflatex (local TeX installation), or TeXShop. Once compiled, place the resulting `resume.pdf` in the root or `assets/` folder, and the site now includes a "Download PDF Resume" link in the header that points to `assets/resume.pdf`.
-- **Matching PDF Export**: Added a "Download as PDF" button that triggers the browser's print-to-PDF functionality. I've also added print-specific CSS to make the PDF look clean (white background, black text, no shadows/buttons).
-- **Contact Form (Netlify Forms)**: Added a simple contact form section. If you host on Netlify, it will automatically handle submissions (sends emails to your linked email). No extra setup needed beyond deploying to Netlify.
-- **Google Analytics**: Added placeholder code in `<head>`. Replace `G-XXXXXXXXXX` with your actual Measurement ID (from Google Analytics setup).
-- **Theme Toggle**: Added a button to switch between dark (default) and light themes. It toggles a CSS class on the body.
-- **Updated resume.json**: I've parsed and expanded the sample data using the details from your provided LaTeX code for accuracy (e.g., added projects, achievements, more skills, updated contact info, expanded summary/experience). This makes the site content match the LaTeX closely.
-- **Other tweaks**: Made the site more recruiter-friendly with better SEO meta tags, added a projects and achievements section in index.html (and rendered them from JSON). The design remains dark/modern/professional.
-
-The site is still fully static (HTML/CSS/JS only, no frameworks), loads data from `data/resume.json`, and is responsive/SEO-optimized.
-
-#### Updated Folder Structure
-```
-resume-site/
-├── index.html
-├── data/
-│   ├── resume.json
-│   └── resume/
-│       └── latex/
-│           └── resume.tex
-├── assets/
-│   ├── styles.css
-│   ├── favicon.svg
-│   └── resume.pdf  (add this after compiling the LaTeX)
-├── .github/
-│   └── workflows/
-│       └── pages.yml
-└── build.py  (optional helper script, updated to validate LaTeX path)
-```
-
-#### `index.html` (Updated with Extras)
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Professional resume of XUser Idyll, Software Engineer specializing in modern web development and AI solutions.">
-    <meta name="keywords" content="XUser Idyll, resume, software engineer, web development, AI, machine learning">
-    <title>XUser Idyll - Resume</title>
-    <link rel="stylesheet" href="assets/styles.css">
-    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-XXXXXXXXXX');
-    </script>
-</head>
-<body>
-    <div class="container">
-        <header id="header">
-            <button id="theme-toggle">Toggle Theme</button>
-            <button onclick="window.print()">Download as PDF</button>
-            <a href="assets/resume.pdf" download>Download PDF Resume</a>
-        </header>
-        <section id="summary"></section>
-        <section id="skills"></section>
-        <section id="experience"></section>
-        <section id="projects"></section>
-        <section id="education"></section>
-        <section id="achievements"></section>
-        <section id="contact-form">
-            <h3>Contact Me</h3>
-            <form name="contact" method="POST" data-netlify="true">
-                <input type="hidden" name="form-name" value="contact">
-                <p><label>Name: <input type="text" name="name" required></label></p>
-                <p><label>Email: <input type="email" name="email" required></label></p>
-                <p><label>Message: <textarea name="message" required></textarea></label></p>
-                <p><button type="submit">Send</button></p>
-            </form>
-        </section>
-    </div>
-    <script>
-        fetch('data/resume.json')
-            .then(response => response.json())
-            .then(data => {
-                // Render header
-                const header = document.getElementById('header');
-                header.innerHTML = `
-                    <h1>${data.name}</h1>
-                    <h2>${data.title}</h2>
-                    <div class="contact">
-                        <p>Email: <a href="mailto:${data.contact.email}">${data.contact.email}</a></p>
-                        <p>Phone: ${data.contact.phone}</p>
-                        <p>LinkedIn: <a href="${data.contact.linkedin}" target="_blank">${data.contact.linkedin}</a></p>
-                        <p>Location: ${data.contact.location}</p>
-                    </div>
-                ` + header.innerHTML;  // Append buttons/links after contact
-
-                // Render summary
-                document.getElementById('summary').innerHTML = `
-                    <h3>Professional Summary</h3>
-                    <p>${data.summary}</p>
-                `;
-
-                // Render skills
-                const skills = document.getElementById('skills');
-                skills.innerHTML = '<h3>Core Competencies</h3><ul>';
-                data.skills.forEach(skill => { skills.innerHTML += `<li>${skill}</li>`; });
-                skills.innerHTML += '</ul>';
-
-                // Render experience
-                const experience = document.getElementById('experience');
-                experience.innerHTML = '<h3>Professional Experience</h3>';
-                data.experience.forEach(exp => {
-                    experience.innerHTML += `
-                        <div class="item">
-                            <h4>${exp.role} at ${exp.company}</h4>
-                            <p>${exp.location} | ${exp.dates}</p>
-                            <ul>${exp.description.map(desc => `<li>${desc}</li>`).join('')}</ul>
-                        </div>
-                    `;
-                });
-
-                // Render projects
-                const projects = document.getElementById('projects');
-                projects.innerHTML = '<h3>Selected Projects</h3>';
-                data.projects.forEach(proj => {
-                    projects.innerHTML += `
-                        <div class="item">
-                            <h4>${proj.title}</h4>
-                            <ul>${proj.description.map(desc => `<li>${desc}</li>`).join('')}</ul>
-                        </div>
-                    `;
-                });
-
-                // Render education
-                const education = document.getElementById('education');
-                education.innerHTML = '<h3>Education</h3>';
-                data.education.forEach(edu => {
-                    education.innerHTML += `
-                        <div class="item">
-                            <h4>${edu.degree}</h4>
-                            <p>${edu.institution} | ${edu.dates}</p>
-                            <p>${edu.coursework}</p>
-                        </div>
-                    `;
-                });
-
-                // Render achievements
-                const achievements = document.getElementById('achievements');
-                achievements.innerHTML = '<h3>Achievements & Honors</h3><ul>';
-                data.achievements.forEach(ach => { achievements.innerHTML += `<li>${ach}</li>`; });
-                achievements.innerHTML += '</ul>';
-            })
-            .catch(error => console.error('Error loading resume data:', error));
-
-        // Theme toggle
-        const toggle = document.getElementById('theme-toggle');
-        toggle.addEventListener('click', () => {
-            document.body.classList.toggle('light-theme');
-        });
-    </script>
-</body>
-</html>
-```
-
-#### `assets/styles.css` (Updated with Light Theme and Print Media)
-```css
-body {
-    background-color: #121212;
-    color: #e0e0e0;
-    font-family: 'Arial', sans-serif;
-    line-height: 1.6;
-    margin: 0;
-    padding: 0;
-}
-
-.container {
-    max-width: 900px;
-    margin: 40px auto;
-    padding: 20px;
-    background-color: #1e1e1e;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-}
-
-h1, h2, h3, h4 {
-    color: #bbdefb;
-    margin-bottom: 10px;
-}
-
-h1 { font-size: 2.5em; }
-h2 { font-size: 1.8em; }
-h3 { font-size: 1.5em; }
-h4 { font-size: 1.2em; }
-
-.contact p {
-    margin: 5px 0;
-}
-
-a {
-    color: #64b5f6;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-.item {
-    margin-bottom: 20px;
-}
-
-ul {
-    list-style-type: disc;
-    padding-left: 20px;
-}
-
 button {
     background-color: #64b5f6;
     color: #121212;
@@ -1305,7 +942,9 @@ form input, form textarea {
 }
 ```
 
-#### `assets/favicon.svg` (Unchanged)
+#### `assets/favicon.svg`
+Simple SVG icon (a professional "SV" monogram).
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
     <rect width="100" height="100" fill="#121212"/>
@@ -1313,7 +952,9 @@ form input, form textarea {
 </svg>
 ```
 
-#### `.github/workflows/pages.yml` (Unchanged)
+#### `.github/workflows/pages.yml`
+GitHub Actions workflow for auto-deploy to GitHub Pages on push to main.
+
 ```yaml
 name: Deploy to GitHub Pages
 
@@ -1332,17 +973,18 @@ jobs:
           folder: .  # Deploy the root folder
 ```
 
-#### `build.py` (Updated to Check LaTeX Path)
+#### `build.py`
+Optional Python script with notes and a convenience function to validate JSON or preview locally (run `python build.py` to check).
+
 ```python
 import json
-import os
 import http.server
 import socketserver
+import os
 
 # Notes:
 # - Edit data/resume.json for content changes.
-# - Compile data/resume/latex/resume.tex to PDF and add as assets/resume.pdf.
-# - Run this script to validate JSON, check LaTeX file, and start a local server for preview.
+# - Run this script to validate JSON and start a local server for preview.
 # - To preview: python build.py
 # - Access at http://localhost:8000
 
@@ -1354,13 +996,6 @@ def validate_json():
     except Exception as e:
         print(f"Error in resume.json: {e}")
 
-def check_latex():
-    latex_path = 'data/resume/latex/resume.tex'
-    if os.path.exists(latex_path):
-        print(f"{latex_path} exists.")
-    else:
-        print(f"Warning: {latex_path} not found.")
-
 def start_server():
     PORT = 8000
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -1371,26 +1006,26 @@ def start_server():
 
 if __name__ == "__main__":
     validate_json()
-    check_latex()
     start_server()
 ```
 
 ### How to Package and Publish
 1. Create the folder structure and files as above.
-2. Compile `resume.tex` to `resume.pdf` (use Overleaf: import the tex, export PDF).
-3. Add `resume.pdf` to `assets/`.
-4. Zip the folder: `resume_site_updated.zip`.
-5. **Download equivalent**: Copy-paste into files on your machine.
+2. Zip the folder: `resume_site.zip` (you can do this manually or via command line).
+3. **Download equivalent**: Since I can't attach files here, copy-paste the code into files on your machine.
 
 #### Publishing to GitHub Pages
-1. Create/update GitHub repo (e.g., `xuser-idyll-resume`).
-2. Push contents to `main`.
-3. Settings > Pages > Source: GitHub Actions (deploys auto).
-4. Live at: https://<your-username>.github.io/xuser-idyll-resume/.
+1. Create a new GitHub repo (e.g., `xuser-idyll-resume`).
+2. Unzip and push the contents to the repo root on branch main.
+3. In GitHub: Settings → Pages → Source: GitHub Actions (the provided workflow will deploy automatically on push).
+4. Your site will be live at https://<your-username>.github.io/<repo-name>/.
 
-#### Live Sandbox/Alternative Hosting
-- **Netlify**: Drag folder to netlify.com/drop (enables forms auto).
-- **Vercel/Cloudflare Pages**: Similar drag-and-drop.
-- Local preview: Run `python build.py`.
+#### Optional: Live Sandbox
+You can also host the folder anywhere that serves static files (Cloudflare Pages, Netlify, Vercel). Just drag-and-drop the unzipped folder into their dashboards.
 
-If you need further tweaks (e.g., add sections, custom icons, or integrate with the resume checker app), let me know!
+### Customize quickly
+- Edit content in `data/resume.json` (all text comes from there).
+- Tweak colors/spacing in `assets/styles.css`.
+- Page is fully static and SEO-friendly; no frameworks required.
+
+### Want me to also generate a matching PDF export or add a contact form (Netlify forms) / Google Analytics / theme toggle?

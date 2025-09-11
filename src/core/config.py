@@ -127,3 +127,8 @@ def get_cors_origins() -> List[str]:
             "https://dashboard.zex-ats-ai.com"
         ]
     return ["*"]  # Allow all origins in development
+
+
+def get_settings():
+    """Backward-compatible accessor for settings (unified main expects this)."""
+    return settings

@@ -13,7 +13,6 @@ from dataclasses import dataclass
 import PyPDF2
 import pdfplumber
 from docx import Document
-import pandas as pd
 from minio import Minio
 
 from src.core.config import settings

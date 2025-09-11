@@ -1,28 +1,40 @@
 """
 ZeX-ATS-AI Sentiment Analysis Utilities
-Advanced sentiment and tone analysis for resume content.
+Lightweight fallback version with optional dependencies.
+If nltk / textblob / spacy not installed, uses simple heuristic.
 """
 
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
-import nltk
-from nltk.sentiment import SentimentIntensityAnalyzer
-from textblob import TextBlob
-import spacy
+# Optional heavy deps --------------------------------------------------------
+try:
+    import nltk  # type: ignore
+    from nltk.sentiment import SentimentIntensityAnalyzer  # type: ignore
+except Exception:  # pragma: no cover
+    nltk = None  # type: ignore
+    SentimentIntensityAnalyzer = None  # type: ignore
+
+try:
+    from textblob import TextBlob  # type: ignore
+except Exception:  # pragma: no cover
+    TextBlob = None  # type: ignore
+
+try:
+    import spacy  # type: ignore
+except Exception:  # pragma: no cover
+    spacy = None  # type: ignore
 
 
 @dataclass
 class SentimentResult:
-    """Sentiment analysis result."""
-    overall_sentiment: str  # positive, negative, neutral
-    confidence_score: float  # 0.0 to 1.0
+    overall_sentiment: str
+    confidence_score: float
     positive_score: float
     negative_score: float
     neutral_score: float
-    compound_score: float  # -1.0 to 1.0
-    subjectivity: float  # 0.0 to 1.0
-    
+    compound_score: float
+    subjectivity: float
     def to_dict(self) -> Dict[str, float]:
         return {
             'overall_sentiment': self.overall_sentiment,
@@ -36,279 +48,107 @@ class SentimentResult:
 
 
 class SentimentAnalyzer:
-    """Advanced sentiment analysis for resume content."""
-    
     def __init__(self):
-        """Initialize sentiment analyzer with multiple models."""
-        # Download VADER lexicon if not available
-        try:
-            self.vader = SentimentIntensityAnalyzer()
-        except LookupError:
-            nltk.download('vader_lexicon', quiet=True)
-            self.vader = SentimentIntensityAnalyzer()
-        
-        # Load spaCy model if available
-        try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except OSError:
-            self.nlp = None
-        
-        # Professional tone keywords
-        self.positive_professional_words = {
-            'achieved', 'accomplished', 'improved', 'increased', 'enhanced',
-            'optimized', 'streamlined', 'developed', 'implemented', 'delivered',
-            'successful', 'effective', 'efficient', 'innovative', 'strategic',
-            'collaborative', 'proactive', 'results-driven', 'experienced',
-            'skilled', 'proficient', 'expert', 'advanced', 'comprehensive'
-        }
-        
-        self.negative_professional_words = {
-            'failed', 'struggled', 'difficult', 'challenging', 'problems',
-            'issues', 'unable', 'inexperienced', 'unfamiliar', 'limited',
-            'basic', 'minimal', 'weak', 'poor', 'inadequate', 'insufficient'
-        }
-        
-        # Power words that indicate strong performance
-        self.power_words = {
-            'accelerated', 'achieved', 'advanced', 'boosted', 'built',
-            'created', 'delivered', 'developed', 'directed', 'drove',
-            'enhanced', 'exceeded', 'executed', 'expanded', 'generated',
-            'implemented', 'improved', 'increased', 'influenced', 'initiated',
-            'launched', 'led', 'managed', 'maximized', 'optimized',
-            'organized', 'produced', 'reduced', 'resolved', 'spearheaded',
-            'strengthened', 'streamlined', 'succeeded', 'supervised', 'transformed'
-        }
-    
-    def analyze_sentiment(self, text: str) -> SentimentResult:
-        """
-        Comprehensive sentiment analysis of resume text.
-        
-        Args:
-            text: Resume text to analyze
-            
-        Returns:
-            SentimentResult with detailed sentiment scores
-        """
-        # VADER sentiment analysis
-        vader_scores = self.vader.polarity_scores(text)
-        
-        # TextBlob sentiment analysis
-        blob = TextBlob(text)
-        blob_sentiment = blob.sentiment
-        
-        # Professional tone analysis
-        professional_scores = self._analyze_professional_tone(text)
-        
-        # Combine scores with weights
-        # VADER compound score: 40%
-        # TextBlob polarity: 30%
-        # Professional tone: 30%
-        compound_score = (
-            vader_scores['compound'] * 0.4 +
-            blob_sentiment.polarity * 0.3 +
-            professional_scores['professional_tone'] * 0.3
-        )
-        
-        # Determine overall sentiment
-        if compound_score >= 0.1:
-            overall_sentiment = 'positive'
-            confidence_score = min(abs(compound_score) * 2, 1.0)
-        elif compound_score <= -0.1:
-            overall_sentiment = 'negative'
-            confidence_score = min(abs(compound_score) * 2, 1.0)
+        self.vader = None
+        if SentimentIntensityAnalyzer:
+            try:
+                self.vader = SentimentIntensityAnalyzer()
+            except Exception:
+                try:
+                    if nltk:
+                        nltk.download('vader_lexicon', quiet=True)  # type: ignore
+                        self.vader = SentimentIntensityAnalyzer()
+                except Exception:
+                    self.vader = None
+        # spaCy optional
+        if spacy:
+            try:
+                self.nlp = spacy.load("en_core_web_sm")  # type: ignore
+            except Exception:
+                try:
+                    self.nlp = spacy.blank("en")  # type: ignore
+                except Exception:
+                    self.nlp = None
         else:
-            overall_sentiment = 'neutral'
-            confidence_score = 1.0 - abs(compound_score) * 2
-        
-        return SentimentResult(
-            overall_sentiment=overall_sentiment,
-            confidence_score=confidence_score,
-            positive_score=vader_scores['pos'],
-            negative_score=vader_scores['neg'],
-            neutral_score=vader_scores['neu'],
-            compound_score=compound_score,
-            subjectivity=blob_sentiment.subjectivity
-        )
-    
+            self.nlp = None
+        self.positive_professional_words = {
+            'achieved','accomplished','improved','increased','enhanced','optimized','streamlined','developed','implemented','delivered','successful','effective','innovative','strategic','collaborative','proactive','results-driven','experienced','skilled','proficient','expert','advanced'
+        }
+        self.negative_professional_words = {
+            'failed','struggled','difficult','issues','unable','inexperienced','limited','basic','minimal','weak','poor'
+        }
+        self.power_words = {
+            'accelerated','achieved','advanced','boosted','built','created','delivered','developed','directed','drove','enhanced','exceeded','executed','expanded','generated','implemented','improved','increased','influenced','initiated','launched','led','managed','maximized','optimized','organized','produced','reduced','resolved','spearheaded','strengthened','streamlined','transformed'
+        }
+
+    def analyze_sentiment(self, text: str) -> SentimentResult:
+        if not text.strip():
+            return SentimentResult('neutral', 1.0,0,0,1,0,0)
+        positive_score = negative_score = neutral_score = 0.0
+        compound = 0.0
+        subjectivity = 0.0
+        if self.vader:
+            try:
+                vs = self.vader.polarity_scores(text)
+                positive_score = vs.get('pos',0.0)
+                negative_score = vs.get('neg',0.0)
+                neutral_score = vs.get('neu',0.0)
+                compound = vs.get('compound',0.0)
+            except Exception:
+                pass
+        if TextBlob:
+            try:
+                blob = TextBlob(text)
+                subjectivity = float(getattr(blob.sentiment,'subjectivity',0.0))
+                if compound == 0.0:
+                    compound = float(getattr(blob.sentiment,'polarity',0.0))
+            except Exception:
+                pass
+        if compound >= 0.1:
+            sentiment = 'positive'
+            confidence = min(abs(compound)*1.5,1.0)
+        elif compound <= -0.1:
+            sentiment = 'negative'
+            confidence = min(abs(compound)*1.5,1.0)
+        else:
+            sentiment = 'neutral'
+            confidence = 1.0 - abs(compound)
+        return SentimentResult(sentiment, confidence, positive_score, negative_score, neutral_score, compound, subjectivity)
+
     def _analyze_professional_tone(self, text: str) -> Dict[str, float]:
-        """Analyze professional tone specific to resumes."""
-        text_lower = text.lower()
-        words = text_lower.split()
-        
-        # Count professional words
-        positive_count = sum(1 for word in words if word in self.positive_professional_words)
-        negative_count = sum(1 for word in words if word in self.negative_professional_words)
-        power_word_count = sum(1 for word in words if word in self.power_words)
-        
-        total_words = len(words)
-        
-        if total_words == 0:
-            return {'professional_tone': 0.0, 'power_words_ratio': 0.0}
-        
-        # Calculate professional tone score
-        positive_ratio = positive_count / total_words
-        negative_ratio = negative_count / total_words
-        power_words_ratio = power_word_count / total_words
-        
-        # Professional tone score (-1 to 1)
-        professional_tone = (positive_ratio - negative_ratio) * 2 + power_words_ratio
-        professional_tone = max(-1.0, min(1.0, professional_tone))
-        
+        tl = text.lower(); words = tl.split(); total = len(words) or 1
+        pos = sum(1 for w in words if w in self.positive_professional_words)
+        neg = sum(1 for w in words if w in self.negative_professional_words)
+        power = sum(1 for w in words if w in self.power_words)
         return {
-            'professional_tone': professional_tone,
-            'power_words_ratio': power_words_ratio,
-            'positive_ratio': positive_ratio,
-            'negative_ratio': negative_ratio
+            'professional_tone': (pos - neg)/total + power/total,
+            'power_words_ratio': power/total,
+            'positive_ratio': pos/total,
+            'negative_ratio': neg/total
         }
-    
+
     def analyze_section_sentiments(self, sections: Dict[str, str]) -> Dict[str, SentimentResult]:
-        """Analyze sentiment for individual resume sections."""
-        section_sentiments = {}
-        
-        for section_name, section_text in sections.items():
-            if section_text and len(section_text.strip()) > 10:
-                section_sentiments[section_name] = self.analyze_sentiment(section_text)
-        
-        return section_sentiments
-    
+        out = {}
+        for name, content in sections.items():
+            if content and len(content.strip()) > 10:
+                out[name] = self.analyze_sentiment(content)
+        return out
+
     def get_tone_recommendations(self, sentiment_result: SentimentResult, text: str) -> List[str]:
-        """Generate recommendations based on sentiment analysis."""
-        recommendations = []
-        
-        # Overall sentiment recommendations
+        rec = []
         if sentiment_result.overall_sentiment == 'negative':
-            recommendations.append(
-                "Consider using more positive and confident language to describe your achievements"
-            )
-        elif sentiment_result.confidence_score < 0.3:
-            recommendations.append(
-                "Strengthen your language with more decisive and impactful words"
-            )
-        
-        # Subjectivity recommendations
+            rec.append('Use more positive, achievement-focused language.')
         if sentiment_result.subjectivity > 0.7:
-            recommendations.append(
-                "Balance subjective statements with objective facts and measurable achievements"
-            )
-        elif sentiment_result.subjectivity < 0.3:
-            recommendations.append(
-                "Add some personality and enthusiasm to make your resume more engaging"
-            )
-        
-        # Power words recommendations
-        professional_scores = self._analyze_professional_tone(text)
-        if professional_scores['power_words_ratio'] < 0.02:  # Less than 2% power words
-            recommendations.append(
-                "Include more action verbs and power words to demonstrate impact and leadership"
-            )
-        
-        # Positive/negative balance
-        if sentiment_result.negative_score > 0.15:
-            recommendations.append(
-                "Minimize negative language and focus on achievements and solutions"
-            )
-        
-        if sentiment_result.positive_score < 0.3:
-            recommendations.append(
-                "Incorporate more positive language to highlight your accomplishments"
-            )
-        
-        return recommendations
-    
+            rec.append('Balance subjective statements with objective metrics.')
+        if sentiment_result.subjectivity < 0.2:
+            rec.append('Add more energetic language to avoid sounding too dry.')
+        return rec
+
     def calculate_confidence_indicators(self, text: str) -> Dict[str, float]:
-        """Calculate indicators of confidence and assertiveness in resume text."""
-        text_lower = text.lower()
-        words = text_lower.split()
-        total_words = len(words)
-        
-        if total_words == 0:
-            return {}
-        
-        # Confidence indicators
-        confident_phrases = {
-            'successfully', 'achieved', 'accomplished', 'exceeded', 'led',
-            'managed', 'directed', 'implemented', 'developed', 'created',
-            'expertise', 'expert', 'proficient', 'skilled', 'experienced'
-        }
-        
-        # Weak language indicators
-        weak_phrases = {
-            'helped', 'assisted', 'participated', 'involved', 'tried',
-            'attempted', 'hoped', 'wished', 'maybe', 'possibly',
-            'somewhat', 'fairly', 'quite', 'pretty', 'rather'
-        }
-        
-        # Uncertainty indicators
-        uncertainty_phrases = {
-            'might', 'could', 'would', 'should', 'perhaps', 'probably',
-            'possibly', 'maybe', 'seems', 'appears', 'tends'
-        }
-        
-        confident_count = sum(1 for word in words if word in confident_phrases)
-        weak_count = sum(1 for word in words if word in weak_phrases)
-        uncertainty_count = sum(1 for word in words if word in uncertainty_phrases)
-        
+        tl = text.lower(); words = tl.split(); total = len(words) or 1
+        confident = {'successfully','achieved','accomplished','exceeded','led','managed','implemented','developed','expert','proficient'}
+        weak = {'helped','assisted','participated','involved','tried','attempted','maybe','possibly','somewhat'}
         return {
-            'confidence_ratio': confident_count / total_words,
-            'weak_language_ratio': weak_count / total_words,
-            'uncertainty_ratio': uncertainty_count / total_words,
-            'confidence_score': max(0, confident_count - weak_count - uncertainty_count) / total_words
+            'confidence_ratio': sum(1 for w in words if w in confident)/total,
+            'weak_language_ratio': sum(1 for w in words if w in weak)/total
         }
-    
-    def analyze_readability_tone(self, text: str) -> Dict[str, float]:
-        """Analyze tone factors that affect readability."""
-        sentences = text.split('.')
-        words = text.split()
-        
-        if not sentences or not words:
-            return {}
-        
-        # Calculate average sentence length
-        avg_sentence_length = len(words) / len(sentences)
-        
-        # Calculate complexity indicators
-        complex_words = [word for word in words if len(word) > 7]
-        complexity_ratio = len(complex_words) / len(words)
-        
-        # Check for jargon and technical terms
-        technical_patterns = [
-            r'\b[A-Z]{2,}\b',  # Acronyms
-            r'\b\w+[-]\w+\b',  # Hyphenated terms
-            r'\b\w+[/]\w+\b'   # Slash terms
-        ]
-        
-        import re
-        jargon_count = 0
-        for pattern in technical_patterns:
-            jargon_count += len(re.findall(pattern, text))
-        
-        jargon_ratio = jargon_count / len(words) if words else 0
-        
-        return {
-            'avg_sentence_length': avg_sentence_length,
-            'complexity_ratio': complexity_ratio,
-            'jargon_ratio': jargon_ratio,
-            'readability_score': 1.0 - min(1.0, (avg_sentence_length/20 + complexity_ratio + jargon_ratio)/3)
-        }
-    
-    def get_emotional_keywords(self, text: str) -> Dict[str, List[str]]:
-        """Extract emotional and tonal keywords from text."""
-        text_lower = text.lower()
-        words = set(text_lower.split())
-        
-        emotional_categories = {
-            'enthusiasm': ['excited', 'passionate', 'motivated', 'eager', 'enthusiastic', 'driven'],
-            'confidence': ['confident', 'assured', 'certain', 'convinced', 'determined'],
-            'achievement': ['achieved', 'accomplished', 'succeeded', 'exceeded', 'surpassed'],
-            'leadership': ['led', 'directed', 'managed', 'guided', 'supervised', 'coordinated'],
-            'innovation': ['innovative', 'creative', 'pioneered', 'developed', 'designed'],
-            'collaboration': ['collaborated', 'teamwork', 'partnered', 'cooperated', 'coordinated']
-        }
-        
-        found_keywords = {}
-        for category, keywords in emotional_categories.items():
-            found = [word for word in keywords if word in words]
-            if found:
-                found_keywords[category] = found
-        
-        return found_keywords

@@ -50,17 +50,11 @@ class TextCleaner:
             'projects': ['projects', 'key projects', 'notable projects', 'project experience'],
             'certifications': ['certifications', 'certificates', 'licenses', 'professional certifications']
         }
+        # Flatten all variations for section extraction regex
+        self._all_section_variations = [h for v in self.section_headers.values() for h in v]
     
     def clean_text(self, text: str) -> str:
-        """
-        Comprehensive text cleaning pipeline.
-        
-        Args:
-            text: Raw text to clean
-            
-        Returns:
-            Cleaned and normalized text
-        """
+        """Comprehensive text cleaning pipeline."""
         if not text:
             return ""
         
@@ -101,9 +95,13 @@ class TextCleaner:
         for bad, good in self.encoding_fixes.items():
             text = text.replace(bad, good)
         
-        # Fix smart quotes and apostrophes
-        text = re.sub(r'["""]', '"', text)
-        text = re.sub(r'[''']', "'", text)
+        # Replace smart / curly double quotes with standard
+        text = re.sub(r'[“”]', '"', text)
+        # Replace smart / curly single quotes / apostrophes with standard
+        text = re.sub(r'[‘’´`]', "'", text)
+        # Normalize any stray repeated quotes
+        text = re.sub(r'"{2,}', '"', text)
+        text = re.sub(r"'{2,}", "'", text)
         
         # Fix em and en dashes
         text = re.sub(r'[–—]', '-', text)
@@ -240,8 +238,8 @@ class TextCleaner:
         # Ensure single space between words
         text = re.sub(r'(\w)\s+(\w)', r'\1 \2', text)
         
-        # Remove any remaining artifacts
-        text = re.sub(r'[^\w\s\n.,;:!?()[\]{}@#$%^&*+=|\\<>"\'-/]', '', text)
+        # Remove any remaining artifacts (allow common punctuation & bullet)
+        text = re.sub(r"[^A-Za-z0-9\s\n\.,;:!\?\(\)\[\]\{@#\$%\^&\*\+=\|\\<>\'\"/\-•]", '', text)
         
         # Ensure consistent line endings
         text = text.replace('\r\n', '\n').replace('\r', '\n')
@@ -251,17 +249,18 @@ class TextCleaner:
     def extract_clean_sections(self, text: str) -> Dict[str, str]:
         """Extract and clean individual sections from resume text."""
         sections = {}
-        text_lower = text.lower()
+        if not text:
+            return sections
         
+        # Build combined header regex once
+        header_pattern = r'(?:' + '|'.join([re.escape(h) for h in self._all_section_variations]) + r')'
         for standard_name, variations in self.section_headers.items():
             for variation in variations:
-                pattern = rf'(?i)\b{re.escape(variation)}\b.*?(?=(?:\b(?:{")|(?:".join([re.escape(h) for headers in self.section_headers.values() for h in headers])}))\b|\Z)'
-                match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
-                
+                # Non-greedy capture until next header or end
+                pattern = re.compile(rf'(?is)\b{re.escape(variation)}\b(.*?)(?=\b{header_pattern}\b|\Z)')
+                match = pattern.search(text)
                 if match:
-                    section_text = match.group()
-                    # Remove the header itself
-                    section_text = re.sub(rf'(?i)^.*?\b{re.escape(variation)}\b[^\n]*\n?', '', section_text)
+                    section_text = match.group(1)
                     sections[standard_name] = self._clean_section_text(section_text.strip())
                     break
         
@@ -287,65 +286,24 @@ class TextCleaner:
         return section_text.strip()
     
     def remove_personal_info(self, text: str, preserve_contact: bool = False) -> str:
-        """Remove or mask personal information for privacy."""
-        if preserve_contact:
+        """Mask personal information unless preservation requested.
+        Args:
+            text: Input resume text.
+            preserve_contact: If True, leaves contact details intact.
+        Returns:
+            Text with personal identifiers masked.
+        """
+        if preserve_contact or not text:
             return text
-        
-        # Mask email addresses
-        text = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', 
-                     '[EMAIL]', text)
-        
-        # Mask phone numbers
-        text = re.sub(r'(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', 
-                     '[PHONE]', text)
-        
-        # Mask addresses (basic pattern)
-        text = re.sub(r'\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Lane|Ln|Drive|Dr|Boulevard|Blvd)', 
-                     '[ADDRESS]', text, flags=re.IGNORECASE)
-        
-        return text
-    
-    def validate_cleaned_text(self, original: str, cleaned: str) -> Dict[str, any]:
-        """Validate that text cleaning preserved important information."""
-        original_words = len(original.split())
-        cleaned_words = len(cleaned.split())
-        
-        # Calculate preservation ratio
-        preservation_ratio = cleaned_words / original_words if original_words > 0 else 0
-        
-        # Check for important sections
-        important_keywords = ['experience', 'education', 'skills', 'summary']
-        preserved_keywords = sum(1 for keyword in important_keywords 
-                               if keyword in cleaned.lower())
-        
-        return {
-            'original_length': len(original),
-            'cleaned_length': len(cleaned),
-            'word_preservation_ratio': preservation_ratio,
-            'preserved_sections': preserved_keywords,
-            'is_valid': preservation_ratio > 0.7 and preserved_keywords >= 2,
-            'warnings': self._generate_cleaning_warnings(original, cleaned)
-        }
-    
-    def _generate_cleaning_warnings(self, original: str, cleaned: str) -> List[str]:
-        """Generate warnings about potential issues in cleaning."""
-        warnings = []
-        
-        original_words = len(original.split())
-        cleaned_words = len(cleaned.split())
-        
-        if cleaned_words < original_words * 0.5:
-            warnings.append("Significant text loss detected during cleaning")
-        
-        if len(cleaned) < 100:
-            warnings.append("Cleaned text is very short, may indicate extraction issues")
-        
-        # Check for missing email/phone after cleaning
-        if '@' in original and '@' not in cleaned:
-            warnings.append("Email address may have been removed during cleaning")
-        
-        # Check for excessive line breaks
-        if cleaned.count('\n') > original.count('\n') * 1.5:
-            warnings.append("Excessive line breaks in cleaned text")
-        
-        return warnings
+        # Emails
+        text = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', '[EMAIL]', text)
+        # Phone numbers (various international/common US formats)
+        phone_pattern = (r"""\b(?:\+?\d{1,3}[\s.-]*)?  # Country code
+                           (?:\(?\d{3}\)?[\s.-]*)      # Area code
+                           \d{3}[\s.-]*\d{4}\b""")
+        text = re.sub(phone_pattern, '[PHONE]', text, flags=re.VERBOSE)
+        # LinkedIn / GitHub profiles
+        text = re.sub(r'\b(?:https?://)?(?:www\.)?linkedin\.com/in/[A-Za-z0-9_-]+/?', '[LINKEDIN]', text, flags=re.IGNORECASE)
+        text = re.sub(r'\b(?:https?://)?(?:www\.)?github\.com/[A-Za-z0-9_.-]+/?', '[GITHUB]', text, flags=re.IGNORECASE)
+        # Simple street addresses
+        text = re.sub(r'\b\d{1,5}\s+[A-ZaL

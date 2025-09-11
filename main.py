@@ -1,504 +1,407 @@
 """
-ZeX-ATS-AI FastAPI Application - Enhanced Multi-Format Support
-Advanced ATS Resume Analyzer with comprehensive document processing capabilities.
+ZeX Unified Platform
+Single entrypoint combining:
+- Multi-format ATS Analysis API (src.api.v1.analyze router)
+- Auth & User / Usage endpoints
+- File & Text analysis (legacy web features)
+- Dynamic Website Generator endpoints
+- Health & System status
+Run:  python main.py
 """
 
+import asyncio
 import logging
-import uvicorn
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
-from fastapi.openapi.utils import get_openapi
 import time
-import os
+import uuid
+import json
 from pathlib import Path
+from datetime import datetime
+from typing import Optional
+import io
+import shutil
+import tempfile
+import zipfile
 
-# Import routers and dependencies
-from src.api.v1 import analyze
-from src.core.config import get_settings
-from src.core.logging import setup_logging
-from src.database.connection import get_database
-from src.utils.health_check import HealthChecker
-from src.schemas.analysis import ErrorResponse
+from fastapi import (
+    FastAPI, UploadFile, File, Form, HTTPException, Depends, BackgroundTasks, Request
+)
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import uvicorn
 
-# Setup logging
-setup_logging()
-logger = logging.getLogger(__name__)
+# Core settings & services
+from src.core.config import get_settings, settings
+# Remove hard import of analyze router; attempt later with graceful fallback
+#from src.api.v1 import analyze
+from src.database.connection import get_database_session, check_database_health
+from src.database.models import User, Analysis, create_tables
+from src.auth.jwt_handler import JWTHandler
+from src.utils.rate_limiter import RateLimiter
+from src.core.ats_analyzer import ATSAnalyzer, ResumeAnalysis
+from src.core.resume_processor import ResumeProcessor
+from dynamic_website_generator import DynamicWebsiteGenerator
+from src.utils.system_logger import init_system_logger, log_api_event
 
-# Get settings
+# Initialize structured system logger
+init_system_logger()
+
+logger = logging.getLogger("zex.unified")
+logging.basicConfig(level=logging.INFO)
+
+app_start_time = time.time()
 settings = get_settings()
 
+# Security
+security = HTTPBearer()
+jwt_handler = JWTHandler()
+rate_limiter = RateLimiter()
+ats_analyzer = ATSAnalyzer()
+resume_processor = ResumeProcessor()
+website_generator = DynamicWebsiteGenerator()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan management."""
-    # Startup
-    logger.info("🚀 Starting ZeX-ATS-AI Enhanced Multi-Format Platform...")
-    
-    # Initialize database
-    try:
-        database = get_database()
-        await database.connect()
-        logger.info("📊 Database connected successfully")
-    except Exception as e:
-        logger.error(f"❌ Database connection failed: {e}")
-        raise
-    
-    # Initialize health checker
-    health_checker = HealthChecker()
-    app.state.health_checker = health_checker
-    
-    # Log supported formats
-    from src.ai.processors.enhanced_document_processor import EnhancedDocumentProcessor
-    processor = EnhancedDocumentProcessor()
-    supported_formats = list(processor.SUPPORTED_FORMATS.keys())
-    logger.info(f"📄 Supported formats: {', '.join(supported_formats)}")
-    
-    logger.info("✅ ZeX-ATS-AI Platform started successfully")
-    
-    yield
-    
-    # Shutdown
-    logger.info("🛑 Shutting down ZeX-ATS-AI Platform...")
-    try:
-        await database.disconnect()
-        logger.info("📊 Database disconnected")
-    except Exception as e:
-        logger.error(f"❌ Database disconnection error: {e}")
-    
-    logger.info("✅ ZeX-ATS-AI Platform shutdown complete")
+# In‑memory store for generated portfolio sites
+class GenerationStatus:
+    def __init__(self, id_: str, filename: str):
+        self.id = id_
+        self.filename = filename
+        self.status = "processing"
+        self.created_at = datetime.utcnow()
+        self.website_path: Optional[str] = None
+        self.zip_path: Optional[str] = None
+        self.error: Optional[str] = None
 
+generations = {}
 
-# Create FastAPI application
+# FastAPI App
 app = FastAPI(
-    title="ZeX-ATS-AI Enhanced Multi-Format Platform",
-    description="""
-    ## 🎯 Advanced ATS Resume Analyzer with Multi-Format Support
-
-    **ZeX-ATS-AI** is a comprehensive resume analysis platform that supports multiple file formats and provides AI-powered insights for job seekers and recruiters.
-
-    ### 📄 Supported Formats:
-    - **Documents**: PDF, DOCX, LaTeX
-    - **Images**: JPEG, PNG (with OCR)
-    - **Presentations**: PowerPoint (PPTX)
-    - **Spreadsheets**: Excel (XLSX)
-    - **Audio**: MP3, WAV (with speech-to-text)
-    - **Video**: MP4, AVI (with transcription and frame analysis)
-
-    ### 🚀 Key Features:
-    - **Multi-AI Integration**: OpenAI, Anthropic, Hugging Face
-    - **Advanced OCR**: Tesseract with image enhancement
-    - **Speech-to-Text**: OpenAI Whisper transcription
-    - **Video Analysis**: Frame extraction with OCR
-    - **ATS Scoring**: Comprehensive compatibility analysis
-    - **Batch Processing**: Enterprise bulk document processing
-    - **Rate Limiting**: Tier-based usage limits
-    - **Real-time Analysis**: WebSocket support for live updates
-
-    ### 🔧 API Capabilities:
-    - RESTful API with comprehensive endpoints
-    - Multi-format file upload and processing
-    - Real-time analysis status tracking
-    - Detailed format-specific insights
-    - Batch processing for enterprise users
-    - Analytics and reporting dashboards
-
-    ### 🛡️ Security & Performance:
-    - JWT-based authentication
-    - Rate limiting and abuse prevention
-    - Secure file handling and processing
-    - Scalable containerized deployment
-    - Comprehensive error handling
-
-    ---
-    **Version**: 2.0.0 | **License**: MIT | **Support**: [GitHub Issues](https://github.com/ZeX-ATS-AI/issues)
-    """,
-    version="2.0.0",
-    contact={
-        "name": "ZeX-ATS-AI Support",
-        "url": "https://github.com/ZeX-ATS-AI",
-        "email": "support@zex-ats-ai.com"
-    },
-    license_info={
-        "name": "MIT License",
-        "url": "https://opensource.org/licenses/MIT"
-    },
-    openapi_url="/api/openapi.json",
-    docs_url=None,  # Custom docs
-    redoc_url=None,  # Custom redoc
-    lifespan=lifespan,
-    swagger_ui_parameters={
-        "syntaxHighlight.theme": "arta",
-        "tryItOutEnabled": True,
-        "displayRequestDuration": True,
-        "docExpansion": "list",
-        "filter": True,
-        "showCommonExtensions": True,
-        "showExtensions": True
-    }
+    title="ZeX Unified Platform",
+    version="3.0.0",
+    description="All-in-one ATS analysis, auth, and dynamic website generation in a single service.",
+    openapi_url="/api/openapi.json"
 )
 
-# CORS Middleware
+# Middleware for API request logging
+@app.middleware("http")
+async def ats_system_logging_middleware(request: Request, call_next):
+    start = time.time()
+    method = request.method
+    path = request.url.path
+    try:
+        response = await call_next(request)
+        latency_ms = (time.time() - start) * 1000
+        log_api_event(
+            log_type="INFO" if response.status_code < 400 else ("ALERT" if response.status_code < 500 else "ERROR"),
+            method=method,
+            api=path,
+            status_code=response.status_code,
+            latency_ms=latency_ms,
+            error=None,
+            remark="OK" if response.status_code < 400 else None,
+        )
+        return response
+    except Exception as e:  # noqa: BLE001
+        latency_ms = (time.time() - start) * 1000
+        log_api_event(
+            log_type="ERROR",
+            method=method,
+            api=path,
+            status_code=500,
+            latency_ms=latency_ms,
+            error=str(e),
+            remark=None,
+        )
+        raise
+
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=["*"] if settings.debug else ["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Process-Time", "X-Analysis-ID"]
 )
 
-# Trusted Host Middleware
-if settings.ENVIRONMENT == "production":
-    app.add_middleware(
-        TrustedHostMiddleware,
-        allowed_hosts=settings.ALLOWED_HOSTS
-    )
+# Static mounts (if present)
+if Path("dashboard").exists():
+    app.mount("/dashboard", StaticFiles(directory="dashboard", html=True), name="dashboard")
+if Path("generated_websites").exists():
+    app.mount("/sites", StaticFiles(directory="generated_websites", html=True), name="sites")
+if Path("website").exists():
+    app.mount("/website", StaticFiles(directory="website", html=True), name="website")
 
+# Attempt to include existing multi-format analysis router (graceful fallback if deps missing)
+try:  # noqa: WPS501
+    from src.api.v1 import analyze  # type: ignore
+    app.include_router(analyze.router, prefix="/api/v1/analyze", tags=["Multi-Format Analysis"])
+    logger.info("Multi-format analysis router enabled")
+except Exception as e:  # pragma: no cover - optional feature
+    logger.warning(f"Multi-format analysis router disabled: {e}")
 
-# Custom middleware for request timing and analysis tracking
-@app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
-    """Add processing time and analysis tracking."""
-    start_time = time.time()
-    
-    # Generate unique request ID
-    request_id = f"req_{int(start_time * 1000000)}"
-    
-    # Add request context
-    request.state.request_id = request_id
-    request.state.start_time = start_time
-    
-    # Process request
-    response = await call_next(request)
-    
-    # Calculate processing time
-    process_time = time.time() - start_time
-    
-    # Add headers
-    response.headers["X-Process-Time"] = str(round(process_time, 4))
-    response.headers["X-Request-ID"] = request_id
-    
-    # Log for monitoring
-    if process_time > 5.0:  # Log slow requests
-        logger.warning(f"Slow request: {request.method} {request.url} took {process_time:.2f}s")
-    
-    return response
-
-
-# Exception handlers
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    """Handle HTTP exceptions with detailed error responses."""
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=ErrorResponse(
-            error_code=f"HTTP_{exc.status_code}",
-            message=exc.detail,
-            details={
-                "path": str(request.url),
-                "method": request.method,
-                "request_id": getattr(request.state, 'request_id', None)
-            }
-        ).dict()
-    )
-
-
-@app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
-    """Handle general exceptions."""
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    
-    return JSONResponse(
-        status_code=500,
-        content=ErrorResponse(
-            error_code="INTERNAL_SERVER_ERROR",
-            message="An internal server error occurred",
-            details={
-                "path": str(request.url),
-                "method": request.method,
-                "request_id": getattr(request.state, 'request_id', None)
-            } if settings.DEBUG else None
-        ).dict()
-    )
-
-
-# Include routers
-app.include_router(
-    analyze.router,
-    prefix="/api/v1/analyze",
-    tags=["Analysis - Multi-Format Support"],
-    responses={
-        400: {"description": "Bad Request", "model": ErrorResponse},
-        401: {"description": "Unauthorized", "model": ErrorResponse},
-        403: {"description": "Forbidden", "model": ErrorResponse},
-        413: {"description": "File Too Large", "model": ErrorResponse},
-        422: {"description": "Unprocessable Entity", "model": ErrorResponse},
-        429: {"description": "Rate Limit Exceeded", "model": ErrorResponse},
-        500: {"description": "Internal Server Error", "model": ErrorResponse}
-    }
-)
-
-
-# Health check endpoints
-@app.get("/health", tags=["Health"])
-async def health_check():
-    """Basic health check endpoint."""
-    return {
-        "status": "healthy",
-        "service": "ZeX-ATS-AI Enhanced Multi-Format Platform",
-        "version": "2.0.0",
-        "timestamp": time.time()
-    }
-
-
-@app.get("/health/detailed", tags=["Health"])
-async def detailed_health_check():
-    """Detailed health check with component status."""
+# ---------- Auth & User Helpers ----------
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
-        health_checker = app.state.health_checker
-        health_status = await health_checker.check_all_components()
-        
-        return {
-            "status": "healthy" if health_status["overall_healthy"] else "unhealthy",
-            "service": "ZeX-ATS-AI Enhanced Multi-Format Platform",
-            "version": "2.0.0",
-            "timestamp": time.time(),
-            "components": health_status["components"],
-            "supported_formats": {
-                "total": 16,
-                "documents": ["PDF", "DOCX", "LaTeX"],
-                "images": ["JPEG", "PNG"],
-                "presentations": ["PPTX"],
-                "spreadsheets": ["XLSX"],
-                "audio": ["MP3", "WAV"],
-                "video": ["MP4", "AVI"]
-            }
-        }
-        
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unhealthy",
-                "error": "Health check failed",
-                "timestamp": time.time()
-            }
+        payload = jwt_handler.verify_token(credentials.credentials)
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+        async with get_database_session() as session:
+            # Works for sync or async session (SQLite fallback)
+            user = session.query(User).filter(User.id == user_id).first()
+            if not user:
+                raise HTTPException(status_code=401, detail="User not found")
+            return user
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+async def check_rate_limit(user: User = Depends(get_current_user)):
+    allowed = await rate_limiter.check_limit(str(user.id), user.subscription_tier)
+    if not allowed:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+    return user
+
+# ---------- Auth Endpoints ----------
+@app.post("/auth/register")
+async def register_user(email: str = Form(...), password: str = Form(...), full_name: str = Form(...)):
+    async with get_database_session() as session:
+        existing = session.query(User).filter(User.email == email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="User already exists")
+        user = User(email=email, full_name=full_name, subscription_tier="free")
+        user.set_password(password)
+        session.add(user)
+        session.commit()
+        token = jwt_handler.create_access_token({"sub": str(user.id), "email": user.email})
+        return {"access_token": token, "token_type": "bearer", "user": user.to_dict()}
+
+@app.post("/auth/login")
+async def login_user(email: str = Form(...), password: str = Form(...)):
+    async with get_database_session() as session:
+        user = session.query(User).filter(User.email == email).first()
+        if not user or not user.check_password(password):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        user.last_login = datetime.utcnow()
+        session.commit()
+        token = jwt_handler.create_access_token({"sub": str(user.id), "email": user.email})
+        return {"access_token": token, "token_type": "bearer", "user": user.to_dict()}
+
+@app.get("/user/profile")
+async def user_profile(user: User = Depends(get_current_user)):
+    return user.to_dict()
+
+@app.get("/user/usage")
+async def user_usage(user: User = Depends(get_current_user)):
+    usage = await rate_limiter.get_current_usage(str(user.id))
+    limits = rate_limiter.get_tier_limits(user.subscription_tier)
+    return {"usage": usage, "limits": limits}
+
+# ---------- Resume Analysis (Unified) ----------
+@app.post("/analyze/file")
+async def analyze_file(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    job_description: Optional[str] = Form(None),
+    target_role: Optional[str] = Form(None),
+    user: User = Depends(check_rate_limit)
+):
+    start = time.time()
+    analysis_id = str(uuid.uuid4())
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty file")
+    try:
+        processed = await resume_processor.process_resume_file(io.BytesIO(content), file.filename)
+        analysis: ResumeAnalysis = await ats_analyzer.analyze_resume(
+            processed.cleaned_text, job_description, target_role
         )
+        background_tasks.add_task(_store_analysis, user.id, analysis_id, analysis, processed.metadata, file.filename)
+        return {
+            "analysis_id": analysis_id,
+            "analysis": analysis.to_dict(),
+            "file_metadata": processed.metadata.to_dict() if hasattr(processed.metadata, 'to_dict') else {},
+            "processing_time": round(time.time() - start, 3)
+        }
+    except Exception as e:
+        logger.error(f"File analysis failed: {e}")
+        raise HTTPException(status_code=500, detail="Analysis failed")
 
+@app.post("/analyze/text")
+async def analyze_text(
+    background_tasks: BackgroundTasks,
+    resume_text: str = Form(...),
+    job_description: Optional[str] = Form(None),
+    target_role: Optional[str] = Form(None),
+    user: User = Depends(check_rate_limit)
+):
+    if len(resume_text) < 50:
+        raise HTTPException(status_code=400, detail="Resume text too short")
+    start = time.time()
+    analysis_id = str(uuid.uuid4())
+    try:
+        processed = await resume_processor.process_resume_text(resume_text)
+        analysis: ResumeAnalysis = await ats_analyzer.analyze_resume(
+            processed.cleaned_text, job_description, target_role
+        )
+        background_tasks.add_task(_store_analysis, user.id, analysis_id, analysis, processed.metadata, "text_input")
+        return {
+            "analysis_id": analysis_id,
+            "analysis": analysis.to_dict(),
+            "processing_time": round(time.time() - start, 3)
+        }
+    except Exception:
+        raise HTTPException(status_code=500, detail="Analysis failed")
 
-@app.get("/info", tags=["Information"])
-async def get_platform_info():
-    """Get platform information and capabilities."""
-    return {
-        "platform": "ZeX-ATS-AI Enhanced Multi-Format Platform",
-        "version": "2.0.0",
-        "description": "Advanced ATS Resume Analyzer with comprehensive document processing",
-        "capabilities": {
-            "supported_formats": {
-                "documents": {
-                    "pdf": "Advanced PDF parsing with text and image extraction",
-                    "docx": "Microsoft Word document structure analysis",
-                    "tex": "LaTeX command parsing and text cleaning"
-                },
-                "images": {
-                    "jpg": "JPEG images with OCR extraction",
-                    "png": "PNG images with OCR extraction"
-                },
-                "presentations": {
-                    "pptx": "PowerPoint slide content extraction"
-                },
-                "spreadsheets": {
-                    "xlsx": "Excel worksheet data analysis"
-                },
-                "audio": {
-                    "mp3": "MP3 audio with speech-to-text transcription",
-                    "wav": "WAV audio with speech-to-text transcription"
-                },
-                "video": {
-                    "mp4": "MP4 video with audio transcription and frame OCR",
-                    "avi": "AVI video with audio transcription and frame OCR"
-                }
-            },
-            "ai_models": [
-                "OpenAI GPT-4/GPT-3.5",
-                "Anthropic Claude",
-                "Hugging Face Transformers",
-                "OpenAI Whisper (Speech-to-Text)",
-                "Tesseract OCR"
+@app.get("/analysis/{analysis_id}")
+async def get_analysis(analysis_id: str, user: User = Depends(get_current_user)):
+    async with get_database_session() as session:
+        record = session.query(Analysis).filter(Analysis.id == analysis_id, Analysis.user_id == user.id).first()
+        if not record:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+        return {"analysis": record.result, "created_at": record.created_at, "filename": record.filename}
+
+@app.get("/analysis/history")
+async def analysis_history(limit: int = 10, offset: int = 0, user: User = Depends(get_current_user)):
+    async with get_database_session() as session:
+        q = session.query(Analysis).filter(Analysis.user_id == user.id).order_by(Analysis.created_at.desc())
+        items = q.offset(offset).limit(limit).all()
+        return {
+            "analyses": [
+                {"id": str(a.id), "filename": a.filename, "created_at": a.created_at, "overall_score": a.overall_score}
+                for a in items
             ],
-            "features": [
-                "Multi-format document processing",
-                "AI-powered content analysis",
-                "ATS compatibility scoring",
-                "OCR with image enhancement",
-                "Speech-to-text transcription",
-                "Video frame analysis",
-                "Batch processing (Enterprise)",
-                "Real-time analysis tracking",
-                "Comprehensive error handling"
-            ]
-        },
-        "subscription_tiers": {
-            "free": {
-                "max_file_size": "10MB",
-                "formats": ["PDF", "DOCX", "TXT"],
-                "analyses_per_month": 50
-            },
-            "pro": {
-                "max_file_size": "25MB", 
-                "formats": "All supported formats",
-                "analyses_per_month": 500,
-                "advanced_ai": True
-            },
-            "enterprise": {
-                "max_file_size": "50MB",
-                "formats": "All supported formats",
-                "analyses_per_month": "Unlimited",
-                "batch_processing": True,
-                "api_access": True,
-                "priority_support": True
-            }
-        },
-        "api_documentation": {
-            "swagger_ui": "/docs",
-            "redoc": "/redoc",
-            "openapi_schema": "/api/openapi.json"
+            "total": q.count()
         }
+
+# ---------- Dynamic Website Generation ----------
+@app.post("/website/generate")
+async def generate_website(
+    file: UploadFile = File(...),
+    theme: str = Form("modern"),
+    output_name: Optional[str] = Form(None),
+    user: User = Depends(get_current_user)
+):
+    allowed = {'.pdf', '.docx', '.doc', '.txt'}
+    ext = Path(file.filename).suffix.lower()
+    if ext not in allowed:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type. Allowed: {', '.join(allowed)}")
+    gen_id = str(uuid.uuid4())
+    generations[gen_id] = GenerationStatus(gen_id, file.filename)
+    asyncio.create_task(_process_site(gen_id, file, theme, output_name))
+    return {"generation_id": gen_id, "status": "processing"}
+
+@app.get("/website/status/{generation_id}")
+async def site_status(generation_id: str):
+    status = generations.get(generation_id)
+    if not status:
+        raise HTTPException(status_code=404, detail="Generation ID not found")
+    resp = {
+        "generation_id": generation_id,
+        "status": status.status,
+        "filename": status.filename,
+        "created_at": status.created_at
     }
+    if status.status == "completed":
+        resp["download_url"] = f"/website/download/{generation_id}"
+        if status.website_path:
+            resp["preview_url"] = f"/sites/{Path(status.website_path).name}/index.html"
+    if status.error:
+        resp["error"] = status.error
+    return resp
 
+@app.get("/website/download/{generation_id}")
+async def site_download(generation_id: str):
+    status = generations.get(generation_id)
+    if not status or status.status != "completed" or not status.zip_path:
+        raise HTTPException(status_code=404, detail="Not ready")
+    return FileResponse(path=status.zip_path, filename=f"portfolio-{generation_id[:8]}.zip", media_type="application/zip")
 
-# Custom documentation endpoints
-@app.get("/docs", include_in_schema=False)
-async def custom_swagger_ui_html():
-    """Custom Swagger UI with enhanced styling."""
-    return get_swagger_ui_html(
-        openapi_url=app.openapi_url,
-        title=f"{app.title} - Interactive API Documentation",
-        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui-bundle.js",
-        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui.css",
-        swagger_favicon_url="https://fastapi.tiangolo.com/img/favicon.png"
-    )
+# ---------- Health & Info ----------
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "uptime_seconds": int(time.time() - app_start_time), "version": app.version}
 
-
-@app.get("/redoc", include_in_schema=False)
-async def redoc_html():
-    """Custom ReDoc documentation."""
-    return get_redoc_html(
-        openapi_url=app.openapi_url,
-        title=f"{app.title} - API Reference",
-        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@2.0.0/bundles/redoc.standalone.js",
-        redoc_favicon_url="https://fastapi.tiangolo.com/img/favicon.png"
-    )
-
-
-# Custom OpenAPI schema
-def custom_openapi():
-    """Generate custom OpenAPI schema with enhanced metadata."""
-    if app.openapi_schema:
-        return app.openapi_schema
-    
-    openapi_schema = get_openapi(
-        title="ZeX-ATS-AI Enhanced Multi-Format Platform",
-        version="2.0.0",
-        description=app.description,
-        routes=app.routes,
-        tags=[
-            {
-                "name": "Analysis - Multi-Format Support",
-                "description": "Advanced multi-format document analysis endpoints supporting PDF, DOCX, LaTeX, images, audio, video, and more."
-            },
-            {
-                "name": "Health",
-                "description": "System health monitoring and status endpoints."
-            },
-            {
-                "name": "Information",
-                "description": "Platform information and capabilities."
-            }
-        ]
-    )
-    
-    # Add custom schema extensions
-    openapi_schema["info"]["x-logo"] = {
-        "url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"
-    }
-    
-    openapi_schema["servers"] = [
-        {"url": "http://localhost:8000", "description": "Development server"},
-        {"url": "https://api.zex-ats-ai.com", "description": "Production server"}
-    ]
-    
-    # Add security schemes
-    openapi_schema["components"]["securitySchemes"] = {
-        "BearerAuth": {
-            "type": "http",
-            "scheme": "bearer",
-            "bearerFormat": "JWT"
-        },
-        "APIKeyAuth": {
-            "type": "apiKey",
-            "in": "header",
-            "name": "X-API-Key"
-        }
-    }
-    
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
-
-
-app.openapi = custom_openapi
-
-
-# Static files for development
-if settings.DEBUG:
-    static_dir = Path(__file__).parent / "static"
-    if static_dir.exists():
-        app.mount("/static", StaticFiles(directory=static_dir), name="static")
-
-
-# Root endpoint
-@app.get("/", tags=["Root"])
-async def root():
-    """Welcome endpoint with platform overview."""
+@app.get("/health/detailed")
+async def health_detailed():
+    db_health = await check_database_health()
     return {
-        "message": "Welcome to ZeX-ATS-AI Enhanced Multi-Format Platform! 🚀",
-        "description": "Advanced ATS Resume Analyzer with comprehensive document processing capabilities",
-        "version": "2.0.0",
-        "supported_formats": [
-            "PDF", "DOCX", "LaTeX", "JPEG", "PNG", 
-            "PPTX", "XLSX", "MP3", "WAV", "MP4", "AVI"
-        ],
-        "documentation": {
-            "interactive_docs": "/docs",
-            "api_reference": "/redoc",
-            "platform_info": "/info",
-            "health_status": "/health"
-        },
-        "quick_start": {
-            "1": "Upload your resume in any supported format",
-            "2": "Get comprehensive ATS analysis with AI insights",
-            "3": "Receive actionable recommendations for improvement",
-            "4": "Track your progress with detailed analytics"
-        }
+        "status": "healthy" if db_health.get("status") == "healthy" else "degraded",
+        "database": db_health,
+        "rate_limiter": {"redis": bool(rate_limiter.redis_client)},
+        "uptime_seconds": int(time.time() - app_start_time),
+        "timestamp": datetime.utcnow().isoformat()
     }
 
+@app.get("/")
+async def root():
+    return {
+        "message": "Welcome to ZeX Unified Platform 🚀",
+        "docs": "/docs",
+        "api_schema": "/api/openapi.json",
+        "feature_groups": ["auth", "analysis", "website_generator"],
+        "analysis_endpoints": ["POST /analyze/file", "POST /analyze/text"],
+        "multi_format_router": "enabled" if 'analyze' in globals() else "disabled",
+        "website_generator": {"start": "POST /website/generate", "status": "GET /website/status/{id}"}
+    }
 
-# Development server
+# ---------- Internal Helpers ----------
+async def _store_analysis(user_id, analysis_id, analysis: ResumeAnalysis, metadata, filename: str):
+    try:
+        async with get_database_session() as session:
+            record = Analysis(
+                id=analysis_id,
+                user_id=user_id,
+                filename=filename,
+                result=analysis.to_dict(),
+                metadata=metadata.to_dict() if hasattr(metadata, 'to_dict') else {},
+                overall_score=analysis.ats_score.overall_score,
+                keyword_score=analysis.ats_score.keyword_score,
+                format_score=analysis.ats_score.format_score,
+                processing_time=analysis.processing_time,
+                ai_insights_included=bool(analysis.ai_insights)
+            )
+            session.add(record)
+            # increment user counter
+            user = session.query(User).filter(User.id == user_id).first()
+            if user:
+                user.analyses_count += 1
+            session.commit()
+    except Exception as e:
+        logger.error(f"Failed to store analysis {analysis_id}: {e}")
+
+async def _process_site(gen_id: str, file: UploadFile, theme: str, output_name: Optional[str]):
+    status: GenerationStatus = generations[gen_id]
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix) as tmp:
+            content = await file.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+        if not output_name:
+            output_name = f"portfolio-{gen_id[:8]}"
+        resume_data = website_generator.extract_resume_data(tmp_path)
+        site_path = website_generator.generate_website(resume_data, output_name, theme)
+        zip_path = website_generator.create_zip_package(site_path)
+        status.status = "completed"
+        status.website_path = site_path
+        status.zip_path = zip_path
+        Path(tmp_path).unlink(missing_ok=True)
+    except Exception as e:
+        status.status = "error"
+        status.error = str(e)
+        logger.error(f"Website generation failed {gen_id}: {e}")
+
+# ---------- Startup / Shutdown ----------
+@app.on_event("startup")
+async def startup():
+    logger.info("Starting ZeX Unified Platform ...")
+    await create_tables()
+    await rate_limiter.initialize()
+    logger.info("Startup complete")
+
+@app.on_event("shutdown")
+async def shutdown():
+    logger.info("Shutting down ZeX Unified Platform")
+
+# ---------- Run ----------
 if __name__ == "__main__":
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info",
-        access_log=True,
-        use_colors=True,
-        reload_includes=["*.py"],
-        reload_excludes=["tests/*", "*.pyc", "__pycache__"]
-    )
+    uvicorn.run("main:app", host=settings.host, port=settings.port, reload=settings.debug)

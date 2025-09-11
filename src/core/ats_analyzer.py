@@ -9,18 +9,47 @@ import asyncio
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, asdict
 from datetime import datetime
+import logging
 
-import spacy
-import nltk
-from textstat import flesch_reading_ease, syllable_count
-from textblob import TextBlob
-import openai
-import anthropic
+# Optional heavy dependencies (graceful degradation)
+try:
+    import spacy  # type: ignore
+except Exception:
+    spacy = None  # type: ignore
+
+try:
+    import nltk  # type: ignore
+except Exception:
+    nltk = None  # type: ignore
+
+try:
+    from textstat import flesch_reading_ease  # type: ignore
+except Exception:
+    def flesch_reading_ease(text: str) -> float:  # fallback
+        # Simple heuristic fallback returning mid-range readability
+        return 65.0
+
+try:
+    from textblob import TextBlob  # type: ignore
+except Exception:
+    TextBlob = None  # type: ignore
+
+try:
+    import openai  # type: ignore
+except Exception:
+    openai = None  # type: ignore
+
+try:
+    import anthropic  # type: ignore
+except Exception:
+    anthropic = None  # type: ignore
 
 from src.core.config import settings
 from src.utils.text_processing import TextProcessor
 from src.utils.keyword_extractor import KeywordExtractor
 from src.utils.sentiment_analyzer import SentimentAnalyzer
+
+logger = logging.getLogger("zex.ats_analyzer")
 
 
 @dataclass
@@ -65,25 +94,46 @@ class ATSAnalyzer:
     """Enterprise-grade ATS compatibility analyzer."""
     
     def __init__(self):
-        """Initialize the ATS analyzer with AI models and processors."""
+        """Initialize the ATS analyzer with AI models and processors.
+        Adds robust fallback when spaCy models are unavailable to keep the
+        unified service operational in low-disk environments.
+        """
         self.text_processor = TextProcessor()
         self.keyword_extractor = KeywordExtractor()
         self.sentiment_analyzer = SentimentAnalyzer()
-        
-        # Load spaCy model
-        try:
-            self.nlp = spacy.load("en_core_web_lg")
-        except OSError:
-            self.nlp = spacy.load("en_core_web_sm")
-        
+        self.nlp = None
+        self.nlp_mode = "unavailable"
+
+        if spacy:
+            # Try large model, then small model, then blank pipeline
+            for model_name in ["en_core_web_lg", "en_core_web_sm"]:
+                try:
+                    self.nlp = spacy.load(model_name)  # type: ignore
+                    self.nlp_mode = model_name
+                    break
+                except Exception:
+                    continue
+            if self.nlp is None:
+                try:
+                    self.nlp = spacy.blank("en")  # minimal tokenizer
+                    self.nlp_mode = "blank_en"
+                    logger.warning(
+                        "spaCy models not installed; using blank 'en' model. Install with: python -m spacy download en_core_web_sm"
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to initialize any spaCy model: {e}")
+        else:
+            logger.warning(
+                "spaCy not installed; NLP features degraded. Install with: pip install spacy && python -m spacy download en_core_web_sm"
+            )
+
         # Initialize AI clients
         if settings.openai_api_key:
             openai.api_key = settings.openai_api_key
-        
         if settings.anthropic_api_key:
-            self.anthropic_client = anthropic.Anthropic(
-                api_key=settings.anthropic_api_key
-            )
+            self.anthropic_client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        else:
+            self.anthropic_client = None
     
     async def analyze_resume(
         self, 
@@ -157,26 +207,12 @@ class ATSAnalyzer:
         
         # Keyword matching score
         keyword_score = await self._calculate_keyword_score(resume_text, job_description)
-        
-        # Format compatibility score
         format_score = self._calculate_format_score(resume_text)
-        
-        # Readability score
         readability_score = self._calculate_readability_score(resume_text)
-        
-        # Content quality score
         content_score = self._calculate_content_score(resume_text)
-        
-        # Contact information score
         contact_score = self._calculate_contact_score(resume_text)
-        
-        # Skills presentation score
         skills_score = self._calculate_skills_score(resume_text)
-        
-        # Experience presentation score
         experience_score = self._calculate_experience_score(resume_text)
-        
-        # Education presentation score
         education_score = self._calculate_education_score(resume_text)
         
         # Calculate overall weighted score
@@ -287,33 +323,35 @@ class ATSAnalyzer:
             return 0.7  # Neutral score if calculation fails
     
     def _calculate_content_score(self, resume_text: str) -> float:
-        """Calculate content quality score."""
+        """Calculate content quality score (robust without spaCy)."""
         score = 0.0
         
         # Check for quantifiable achievements
         numbers = re.findall(r'\d+[%]?|\$\d+', resume_text)
-        if len(numbers) >= 5:
-            score += 0.3
-        elif len(numbers) >= 2:
-            score += 0.2
-        else:
-            score += 0.1
+        score += 0.3 if len(numbers) >= 5 else 0.2 if len(numbers) >= 2 else 0.1
         
-        # Check for action verbs
-        doc = self.nlp(resume_text)
-        verbs = [token.lemma_ for token in doc if token.pos_ == 'VERB']
-        strong_verbs = ['achieve', 'develop', 'implement', 'manage', 'lead', 
-                       'create', 'improve', 'increase', 'optimize', 'deliver']
-        strong_verb_count = sum(1 for verb in verbs if verb in strong_verbs)
+        # Check for strong action verbs
+        strong_verbs = ['achieve','develop','implement','manage','lead','create','improve','increase','optimize','deliver']
+        if self.nlp:
+            try:
+                doc = self.nlp(resume_text)
+                verbs = [t.lemma_.lower() for t in doc if getattr(t, 'pos_', None) == 'VERB']
+            except Exception:
+                verbs = []
+        else:
+            # Heuristic fallback: simple word match
+            tokens = [w.lower() for w in re.findall(r'[A-Za-z]+', resume_text)]
+            verbs = [w for w in tokens if w in strong_verbs]
+        strong_verb_count = sum(1 for v in verbs if v in strong_verbs)
         score += min(strong_verb_count / 10, 0.25)
         
         # Check for industry-relevant keywords
         score += min(len(set(resume_text.lower().split()) & 
-                    set(['python', 'java', 'sql', 'aws', 'docker', 'kubernetes'])) / 20, 0.2)
+                    set(['python','java','sql','aws','docker','kubernetes'])) / 20, 0.2)
         
         # Check against clichés
-        cliches = ['team player', 'hard worker', 'detail-oriented', 'self-motivated']
-        cliche_count = sum(1 for cliche in cliches if cliche in resume_text.lower())
+        cliches = ['team player','hard worker','detail-oriented','self-motivated']
+        cliche_count = sum(1 for c in cliches if c in resume_text.lower())
         score += max(0.25 - (cliche_count * 0.1), 0)
         
         return min(score, 1.0)
@@ -433,7 +471,7 @@ class ATSAnalyzer:
     
     async def _analyze_skills(self, resume_text: str) -> Dict[str, Any]:
         """Analyze skills mentioned in the resume."""
-        doc = self.nlp(resume_text)
+        # Removed unused doc = self.nlp(resume_text) for fallback safety
         
         # Extract technical skills
         technical_skills = []
@@ -444,39 +482,45 @@ class ATSAnalyzer:
         ]
         
         for pattern in skill_patterns:
-            matches = re.findall(pattern, resume_text, re.IGNORECASE)
-            technical_skills.extend(matches)
+            technical_skills.extend(re.findall(pattern, resume_text, re.IGNORECASE))
         
         # Extract soft skills using NLP
-        soft_skill_keywords = ['leadership', 'communication', 'teamwork', 'problem-solving']
-        soft_skills = [skill for skill in soft_skill_keywords if skill in resume_text.lower()]
+        soft_skill_keywords = ['leadership','communication','teamwork','problem-solving']
+        soft_skills = [s for s in soft_skill_keywords if s in resume_text.lower()]
         
         return {
             'technical_skills': list(set(technical_skills)),
             'soft_skills': soft_skills,
             'skill_count': len(set(technical_skills + soft_skills)),
             'skills_by_category': {
-                'programming': [s for s in technical_skills if s in ['python', 'java', 'javascript', 'c++']],
-                'cloud': [s for s in technical_skills if s in ['aws', 'docker', 'kubernetes']],
-                'data': [s for s in technical_skills if 'data' in s or 'machine learning' in s]
+                'programming': [s for s in technical_skills if s.lower() in ['python','java','javascript','c++']],
+                'cloud': [s for s in technical_skills if s.lower() in ['aws','docker','kubernetes']],
+                'data': [s for s in technical_skills if 'data' in s.lower() or 'machine learning' in s.lower()]
             }
         }
     
     async def _analyze_content_quality(self, resume_text: str) -> Dict[str, Any]:
         """Analyze overall content quality."""
-        doc = self.nlp(resume_text)
+        if self.nlp and self.nlp_mode != 'blank_en':
+            try:
+                doc = self.nlp(resume_text)
+                sentences = [s.text for s in doc.sents] or [resume_text]
+                unique_words = len(set(t.lemma_.lower() for t in doc if getattr(t, 'is_alpha', False)))
+                total_words = len([t for t in doc if getattr(t, 'is_alpha', False)])
+            except Exception:
+                sentences = re.split(r'[.!?]\s+', resume_text)
+                tokens = re.findall(r'[A-Za-z]+', resume_text)
+                unique_words = len(set(tokens))
+                total_words = len(tokens)
+        else:
+            sentences = re.split(r'[.!?]\s+', resume_text)
+            tokens = re.findall(r'[A-Za-z]+', resume_text)
+            unique_words = len(set(tokens))
+            total_words = len(tokens)
         
-        # Sentiment analysis
         sentiment = self.sentiment_analyzer.analyze_sentiment(resume_text)
-        
-        # Grammar and language analysis
-        sentences = [sent.text for sent in doc.sents]
-        avg_sentence_length = sum(len(sent.split()) for sent in sentences) / len(sentences)
-        
-        # Vocabulary complexity
-        unique_words = len(set(token.lemma_.lower() for token in doc if token.is_alpha))
-        total_words = len([token for token in doc if token.is_alpha])
-        vocabulary_richness = unique_words / total_words if total_words > 0 else 0
+        avg_sentence_length = sum(len(s.split()) for s in sentences) / max(len(sentences), 1)
+        vocabulary_richness = unique_words / total_words if total_words else 0
         
         return {
             'sentiment': sentiment,
@@ -485,7 +529,8 @@ class ATSAnalyzer:
             'readability_score': flesch_reading_ease(resume_text),
             'word_count': total_words,
             'sentence_count': len(sentences),
-            'paragraph_count': len(resume_text.split('\n\n'))
+            'paragraph_count': len(resume_text.split('\n\n')),
+            'nlp_mode': self.nlp_mode
         }
     
     async def _analyze_format_structure(self, resume_text: str) -> Dict[str, Any]:
@@ -531,7 +576,7 @@ class ATSAnalyzer:
             insights['openai_error'] = str(e)
         
         try:
-            if settings.anthropic_api_key:
+            if settings.anthropic_api_key and self.anthropic_client:
                 insights.update(await self._get_anthropic_insights(resume_text, job_description, target_role))
         except Exception as e:
             insights['anthropic_error'] = str(e)
