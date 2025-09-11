@@ -20,7 +20,7 @@
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='20' font-size='20'>🎯</text></svg>">
 </head>
-<body data-theme="light">
+<body data-theme="light" data-base-url="">
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
@@ -432,7 +432,7 @@
                         </div>
                     </div>
                     <div class="api-actions">
-                        <a href="http://localhost:8000/docs" target="_blank" class="btn btn-primary">
+                        <a data-path="/docs" target="_blank" class="btn btn-primary">
                             <i class="fas fa-external-link-alt"></i>
                             Open Swagger UI
                         </a>
@@ -465,7 +465,7 @@
                         </div>
                     </div>
                     <div class="api-actions">
-                        <a href="http://localhost:8080/docs" target="_blank" class="btn btn-primary">
+                        <a data-path="/docs" target="_blank" class="btn btn-primary">
                             <i class="fas fa-external-link-alt"></i>
                             Open Swagger UI
                         </a>
@@ -503,8 +503,8 @@
                     <div class="footer-section">
                         <h4>Developers</h4>
                         <a href="#api-docs">API Documentation</a>
-                        <a href="http://localhost:8000/docs" target="_blank">ATS API</a>
-                        <a href="http://localhost:8080/docs" target="_blank">Website API</a>
+                          <a data-path="/docs" target="_blank">ATS API</a>
+                          <a data-path="/docs" target="_blank">Website API</a>
                     </div>
                     <div class="footer-section">
                         <h4>Support</h4>
