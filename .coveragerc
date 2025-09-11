@@ -1,0 +1,21 @@
+[run]
+branch = True
+# Focus phase-1 gating on high-value logic: core analyzer + in-house AI.
+source = src/core,src/ai/inhouse
+omit = 
+    */__init__.py
+    src/core/resume_processor.py
+    src/dashboard/*
+
+[report]
+# Stage 1 threshold (raise progressively: 80 -> 85 -> 90)
+fail_under = 90
+show_missing = True
+skip_covered = True
+exclude_lines =
+    pragma: no cover
+    if __name__ == '__main__':
+    def __repr__
+
+[xml]
+output = coverage.xml

@@ -40,7 +40,11 @@ from src.database.models import User, Analysis, create_tables
 from src.auth.jwt_handler import JWTHandler
 from src.utils.rate_limiter import RateLimiter
 from src.core.ats_analyzer import ATSAnalyzer, ResumeAnalysis
-from src.core.resume_processor import ResumeProcessor
+try:  # Lightweight runtime may exclude heavy doc/PDF deps
+    from src.core.resume_processor import ResumeProcessor  # type: ignore
+except Exception as e:  # pragma: no cover - runtime degradation path
+    ResumeProcessor = None  # type: ignore
+    logger.warning(f"ResumeProcessor unavailable (degraded mode): {e}")
 from dynamic_website_generator import DynamicWebsiteGenerator
 from src.utils.system_logger import init_system_logger, log_api_event
 
@@ -58,7 +62,7 @@ security = HTTPBearer()
 jwt_handler = JWTHandler()
 rate_limiter = RateLimiter()
 ats_analyzer = ATSAnalyzer()
-resume_processor = ResumeProcessor()
+resume_processor = ResumeProcessor() if ResumeProcessor else None
 website_generator = DynamicWebsiteGenerator()
 
 # In‑memory store for generated portfolio sites
@@ -207,6 +211,8 @@ async def analyze_file(
 ):
     start = time.time()
     analysis_id = str(uuid.uuid4())
+    if resume_processor is None:
+        raise HTTPException(status_code=503, detail="Document processing not available in slim runtime. Install full requirements.")
     content = await file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Empty file")
@@ -234,6 +240,8 @@ async def analyze_text(
     target_role: Optional[str] = Form(None),
     user: User = Depends(check_rate_limit)
 ):
+    if resume_processor is None:
+        raise HTTPException(status_code=503, detail="Text processing not available in slim runtime. Install full requirements.")
     if len(resume_text) < 50:
         raise HTTPException(status_code=400, detail="Resume text too short")
     start = time.time()

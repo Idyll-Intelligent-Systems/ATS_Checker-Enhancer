@@ -14,6 +14,21 @@ from datetime import datetime, timedelta
 import json
 import io
 from typing import Dict, List, Optional
+from src.core.config import (
+    load_user_preferences,
+    set_user_preference,
+    get_user_preference,
+    get_user_scoped_preference,
+    set_user_scoped_preference,
+    get_user_roles,
+)
+from io import BytesIO
+from src.dashboard.pdf_export import build_pdf_html, SECTION_DEFS
+try:
+    from weasyprint import HTML  # type: ignore
+    _PDF_AVAILABLE = True
+except Exception:  # graceful fallback
+    _PDF_AVAILABLE = False
 
 # Set page configuration
 st.set_page_config(
@@ -23,36 +38,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
-st.markdown("""
-<style>
-    .main-header {
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1rem;
-        border-radius: 10px;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .metric-card {
-        background: white;
-        padding: 1rem;
-        border-radius: 10px;
-        border-left: 4px solid #667eea;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .score-excellent { color: #28a745; }
-    .score-good { color: #ffc107; }
-    .score-poor { color: #dc3545; }
-    .recommendation-box {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #17a2b8;
-        margin: 0.5rem 0;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Theme / UI Phase 3: dynamic futuristic styling is injected at runtime (see inject_theme)
 
 # Import local modules (these would need to be adjusted based on actual structure)
 try:
@@ -71,6 +57,15 @@ class StreamlitDashboard:
         """Initialize dashboard components."""
         self.ats_analyzer = ATSAnalyzer()
         self.resume_processor = ResumeProcessor()
+        # Session defaults
+        prefs = load_user_preferences()
+        if 'dark_mode' not in st.session_state:
+            st.session_state.dark_mode = bool(prefs.get('dark_mode', False))
+        if 'primary_color' not in st.session_state:
+            st.session_state.primary_color = prefs.get('primary_color', '#6366f1')
+        # Simulated user id (placeholder: integrate real auth later)
+        if 'current_user_id' not in st.session_state:
+            st.session_state.current_user_id = 'demo-user'
         
         # Initialize session state
         if 'analysis_results' not in st.session_state:
@@ -79,9 +74,130 @@ class StreamlitDashboard:
             st.session_state.processed_resume = None
         if 'analysis_history' not in st.session_state:
             st.session_state.analysis_history = []
+
+    # ------------------------------------------------------------------
+    # THEME & STYLING
+    # ------------------------------------------------------------------
+    def inject_theme(self):
+        """Inject dynamic glassmorphism theme based on dark/light mode."""
+        dark = st.session_state.dark_mode
+        # Light / Dark palettes (CSS variables)
+        palette = {
+            'bg': '#0f1115' if dark else '#f5f7fb',
+            'panel': 'rgba(255,255,255,0.08)' if dark else 'rgba(255,255,255,0.65)',
+            'panel_border': 'rgba(255,255,255,0.18)' if dark else 'rgba(0,0,0,0.08)',
+            'text': '#f5f7fb' if dark else '#1f2341',
+            'subtext': '#c3c9d4' if dark else '#4b5563',
+            'accent': st.session_state.primary_color,
+            'gradient': 'linear-gradient(135deg,#6366f1 0%,#8b5cf6 50%,#ec4899 100%)',
+            'shadow': '0 8px 24px -6px rgba(0,0,0,0.55)' if dark else '0 8px 24px -6px rgba(0,0,0,0.15)',
+            'badge_bg': 'rgba(99,102,241,0.15)' if dark else 'rgba(99,102,241,0.08)',
+            'scroll_thumb': '#374151' if dark else '#d1d5db'
+        }
+        st.markdown(f"""
+        <style>
+            :root {{
+                --bg: {palette['bg']};
+                --panel: {palette['panel']};
+                --panel-border: {palette['panel_border']};
+                --text: {palette['text']};
+                --subtext: {palette['subtext']};
+                --accent: {palette['accent']};
+                --shadow-elevation: {palette['shadow']};
+                --badge-bg: {palette['badge_bg']};
+            }}
+            html, body, .stApp {{
+                background: var(--bg) !important;
+                color: var(--text) !important;
+                font-family: 'Inter', system-ui, sans-serif;
+                scroll-behavior: smooth;
+            }}
+            /* Scrollbar */
+            ::-webkit-scrollbar {{ width: 10px; }}
+            ::-webkit-scrollbar-track {{ background: transparent; }}
+            ::-webkit-scrollbar-thumb {{ background: {palette['scroll_thumb']}; border-radius: 20px; }}
+            /* Header */
+            .main-header {{
+                background: {palette['gradient']};
+                color: white;
+                padding: 1.2rem 1.5rem;
+                border-radius: 22px;
+                position: relative;
+                overflow: hidden;
+                box-shadow: var(--shadow-elevation);
+            }}
+            .main-header:before {{
+                content: '';
+                position: absolute; inset:0;
+                background: radial-gradient(circle at 30% 20%,rgba(255,255,255,0.25),transparent 60%);
+                mix-blend-mode: overlay; pointer-events:none;
+            }}
+            /* Glass panels */
+            .glass-panel {{
+                background: var(--panel);
+                backdrop-filter: blur(18px) saturate(1.6);
+                -webkit-backdrop-filter: blur(18px) saturate(1.6);
+                border: 1px solid var(--panel-border);
+                border-radius: 20px;
+                padding: 1.25rem 1.4rem 1.4rem 1.4rem;
+                margin-bottom: 1.2rem;
+                box-shadow: var(--shadow-elevation);
+                position: relative;
+                overflow: hidden;
+            }}
+            .glass-panel h2, .glass-panel h3, .glass-panel h4 {{
+                font-weight:600; letter-spacing: .5px; margin-top:0.2rem;
+            }}
+            /* Metric ring container */
+            .metric-grid {{ display:grid; gap:1.2rem; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); margin-bottom:1.5rem; }}
+            .metric-card {{
+                background: var(--panel);
+                border:1px solid var(--panel-border);
+                border-radius:18px;
+                padding:1rem 1.1rem;
+                position:relative;
+                overflow:hidden;
+                transition: all .35s ease;
+            }}
+            .metric-card:hover {{ transform:translateY(-4px); box-shadow:0 12px 30px -10px rgba(0,0,0,.35); }}
+            .metric-title {{ font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; color:var(--subtext); margin:0 0 .35rem 0; }}
+            .metric-value {{ font-size:2.05rem; font-weight:600; line-height:1; margin:0; background:linear-gradient(90deg,var(--accent),#a855f7); -webkit-background-clip:text; color:transparent; }}
+            /* Recommendations */
+            .recommendation-box {{
+                background: var(--panel);
+                backdrop-filter: blur(14px) saturate(1.4);
+                border:1px solid var(--panel-border);
+                border-radius:16px;
+                padding:.85rem 1rem;
+                margin:.55rem 0;
+                font-size:.92rem;
+            }}
+            /* Badges */
+            .neo-badge {{
+                display:inline-block; padding:.35rem .65rem; margin:.25rem .35rem .25rem 0;
+                background:var(--badge-bg); color:var(--text); font-size:.70rem; font-weight:500;
+                letter-spacing:.5px; border:1px solid var(--panel-border); border-radius:40px;
+                backdrop-filter: blur(12px) saturate(1.6);
+            }}
+            .neo-badge.success {{ background:rgba(16,185,129,0.18); border-color:rgba(16,185,129,0.35);}} 
+            .neo-badge.danger {{ background:rgba(239,68,68,0.18); border-color:rgba(239,68,68,0.40);}} 
+            .neo-badge.warn {{ background:rgba(245,158,11,0.20); border-color:rgba(245,158,11,0.45);}} 
+            /* Separator */
+            .section-separator {{ height:1px; background:linear-gradient(90deg,transparent,var(--panel-border),transparent); margin:1.6rem 0 1.1rem; }}
+            /* Glow pulse */
+            @keyframes glowPulse {{ 0%{{box-shadow:0 0 0 0 rgba(99,102,241,.4);}} 70%{{box-shadow:0 0 0 18px rgba(99,102,241,0);}} 100%{{box-shadow:0 0 0 0 rgba(99,102,241,0);}} }}
+            .pulse-accent {{ animation: glowPulse 3.8s ease-in-out infinite; }}
+            .insight-block {{
+                background:var(--panel); border:1px solid var(--panel-border); border-radius:18px; padding:1rem 1.1rem; margin-bottom:.9rem;
+            }}
+            .insight-block h4 {{ margin:.2rem 0 .6rem; font-size:1rem; }}
+        </style>
+        """, unsafe_allow_html=True)
     
     def run(self):
         """Run the main dashboard."""
+        # Inject theme each run (supports dark mode toggle)
+        self.inject_theme()
         # Header
         st.markdown("""
         <div class="main-header">
@@ -112,6 +228,24 @@ class StreamlitDashboard:
                     use_column_width=True)
             
             st.markdown("---")
+            # Dark mode toggle
+            dm = st.checkbox("🌙 Dark Mode", value=st.session_state.dark_mode, key="dark_mode_toggle")
+            if dm != st.session_state.dark_mode:
+                st.session_state.dark_mode = dm
+                set_user_preference('dark_mode', dm)
+                st.rerun()
+            # Accent color picker
+            accent = st.color_picker("🎨 Accent", value=st.session_state.primary_color, key="accent_picker")
+            if accent != st.session_state.primary_color:
+                st.session_state.primary_color = accent
+                set_user_preference('primary_color', accent)
+                st.rerun()
+            # Per-user stored note preference (sample) 
+            user_note = st.text_input("Personal Note (saved)", value=get_user_scoped_preference(st.session_state.current_user_id, 'note', ''), key='user_note_box')
+            if st.button("💾 Save Note", key='save_note_btn'):
+                set_user_scoped_preference(st.session_state.current_user_id, 'note', user_note)
+                st.success("Saved.")
+            st.markdown("<div style='margin-top:.4rem;'></div>", unsafe_allow_html=True)
             
             # Navigation
             pages = {
@@ -260,35 +394,94 @@ class StreamlitDashboard:
     def render_analysis_results(self, analysis_result):
         """Render the analysis results with visualizations."""
         st.header("📊 Analysis Results")
-        
-        # Overall score
         overall_score = analysis_result.ats_score.overall_score
-        score_color = self.get_score_color(overall_score)
-        
-        # Score display
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.markdown(f"""
-            <div class="metric-card">
-                <h2 style="color: {score_color}; margin: 0;">{overall_score:.1f}%</h2>
-                <p style="margin: 0;">Overall ATS Score</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            keyword_score = analysis_result.ats_score.keyword_score
-            st.metric("Keyword Match", f"{keyword_score:.1f}%")
-        
-        with col3:
-            format_score = analysis_result.ats_score.format_score
-            st.metric("Format Score", f"{format_score:.1f}%")
-        
-        with col4:
-            readability_score = analysis_result.ats_score.readability_score
-            st.metric("Readability", f"{readability_score:.1f}%")
+        keyword_score = analysis_result.ats_score.keyword_score
+        format_score = analysis_result.ats_score.format_score
+        readability_score = analysis_result.ats_score.readability_score
+
+        # Futuristic metric grid
+        st.markdown("<div class='glass-panel'>", unsafe_allow_html=True)
+        st.markdown("<h3 style='margin-top:0;'>Performance Snapshot</h3>", unsafe_allow_html=True)
+        mcol1, mcol2, mcol3, mcol4 = st.columns(4)
+        # Radial gauge helper
+        def radial_gauge(label: str, value: float, accent: str, animate: bool = True, steps: int = 15):
+            target = float(f"{value:.1f}")
+            if not animate or target <= 0:
+                frames = []
+                vals = [target]
+            else:
+                vals = np.linspace(0, target, steps)
+                frames = [
+                    go.Frame(data=[go.Indicator(
+                        mode="gauge+number",
+                        value=v,
+                        number={'suffix': '%', 'font': {'size': 26}},
+                        title={'text': label, 'font': {'size': 14}},
+                        gauge={
+                            'axis': {'range': [0,100], 'tickwidth': 1, 'tickcolor': '#888'},
+                            'bar': {'color': accent},
+                            'bgcolor': 'rgba(0,0,0,0)',
+                            'borderwidth': 1,
+                            'bordercolor': 'rgba(255,255,255,0.15)',
+                            'steps': [
+                                {'range':[0,40],'color':'rgba(239,68,68,0.25)'},
+                                {'range':[40,70],'color':'rgba(245,158,11,0.25)'},
+                                {'range':[70,100],'color':'rgba(16,185,129,0.25)'}
+                            ]
+                        }
+                    )]) for v in vals
+                ]
+            # Initial figure
+            fig = go.Figure(
+                data=[go.Indicator(
+                    mode="gauge+number",
+                    value=vals[0],
+                    number={'suffix': '%', 'font': {'size': 26}},
+                    title={'text': label, 'font': {'size': 14}},
+                    gauge={
+                        'axis': {'range': [0,100], 'tickwidth': 1, 'tickcolor': '#888'},
+                        'bar': {'color': accent},
+                        'bgcolor': 'rgba(0,0,0,0)',
+                        'borderwidth': 1,
+                        'bordercolor': 'rgba(255,255,255,0.15)',
+                        'steps': [
+                            {'range':[0,40],'color':'rgba(239,68,68,0.25)'},
+                            {'range':[40,70],'color':'rgba(245,158,11,0.25)'},
+                            {'range':[70,100],'color':'rgba(16,185,129,0.25)'}
+                        ]
+                    }
+                )],
+                frames=frames
+            )
+            if animate and len(frames) > 1:
+                fig.update_layout(
+                    updatemenus=[{
+                        'type': 'buttons',
+                        'buttons': [{
+                            'label': '▶',
+                            'method': 'animate',
+                            'args': [None, {'frame': {'duration': 60, 'redraw': True}, 'fromcurrent': True}]
+                        }],
+                        'x': 0.85,
+                        'y': 0.05,
+                        'showactive': False
+                    }]
+                )
+            fig.update_layout(
+                height=250,
+                margin=dict(l=15,r=15,t=40,b=15),
+                paper_bgcolor='rgba(0,0,0,0)',
+                font={'color':'white' if st.session_state.dark_mode else '#1f2341'}
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        with mcol1: radial_gauge('Overall ATS', overall_score, st.session_state.primary_color)
+        with mcol2: radial_gauge('Keyword Match', keyword_score, st.session_state.primary_color)
+        with mcol3: radial_gauge('Format Score', format_score, st.session_state.primary_color)
+        with mcol4: radial_gauge('Readability', readability_score, st.session_state.primary_color)
+        st.markdown("</div>", unsafe_allow_html=True)
         
         # Detailed score breakdown
+        st.markdown("<div class='section-separator'></div>", unsafe_allow_html=True)
         st.subheader("📋 Score Breakdown")
         
         scores_df = pd.DataFrame({
@@ -328,12 +521,10 @@ class StreamlitDashboard:
             height=400
         )
         
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
+        col_r1, col_r2 = st.columns([2, 1])
+        with col_r1:
             st.plotly_chart(fig_radar, use_container_width=True)
-        
-        with col2:
+        with col_r2:
             st.dataframe(
                 scores_df.style.format({'Score': '{:.1f}%'}).background_gradient(
                     subset=['Score'], cmap='RdYlGn', vmin=0, vmax=100
@@ -342,27 +533,28 @@ class StreamlitDashboard:
             )
         
         # Strengths and Weaknesses
-        col1, col2 = st.columns(2)
-        
-        with col1:
+        st.markdown("<div class='section-separator'></div>", unsafe_allow_html=True)
+        col_s1, col_s2 = st.columns(2)
+        with col_s1:
             st.subheader("💪 Strengths")
-            for strength in analysis_result.strengths:
-                st.success(f"✅ {strength}")
-        
-        with col2:
+            if analysis_result.strengths:
+                for s in analysis_result.strengths:
+                    st.markdown(f"<span class='neo-badge success'>{s}</span>", unsafe_allow_html=True)
+            else:
+                st.info("No strengths identified.")
+        with col_s2:
             st.subheader("⚠️ Areas for Improvement")
-            for weakness in analysis_result.weaknesses:
-                st.warning(f"⚠️ {weakness}")
+            if analysis_result.weaknesses:
+                for w in analysis_result.weaknesses:
+                    st.markdown(f"<span class='neo-badge danger'>{w}</span>", unsafe_allow_html=True)
+            else:
+                st.success("No critical weaknesses detected.")
         
         # Recommendations
+        st.markdown("<div class='section-separator'></div>", unsafe_allow_html=True)
         st.subheader("🎯 Recommendations")
-        
         for i, suggestion in enumerate(analysis_result.suggestions):
-            st.markdown(f"""
-            <div class="recommendation-box">
-                <strong>Recommendation {i+1}:</strong> {suggestion}
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"<div class='recommendation-box'><strong>{i+1}.</strong> {suggestion}</div>", unsafe_allow_html=True)
         
         # Keyword Analysis
         if analysis_result.keyword_analysis:
@@ -390,30 +582,73 @@ class StreamlitDashboard:
         
         # AI Insights (if available)
         if hasattr(analysis_result, 'ai_insights') and analysis_result.ai_insights:
-            st.subheader("🤖 AI-Powered Insights")
-            
-            with st.expander("View AI Analysis", expanded=False):
-                if 'openai_insights' in analysis_result.ai_insights:
-                    st.json(analysis_result.ai_insights['openai_insights'])
-                elif 'anthropic_insights' in analysis_result.ai_insights:
-                    st.write(analysis_result.ai_insights['anthropic_insights'])
-                else:
-                    st.info("AI insights not available for this analysis")
+            st.subheader("🤖 In-House Insight Engine")
+            insights_payload = analysis_result.ai_insights.get('insights') if isinstance(analysis_result.ai_insights, dict) else None
+            if insights_payload and isinstance(insights_payload, dict):
+                # Display structured insight blocks
+                for section_key, section_value in insights_payload.items():
+                    with st.expander(section_key.replace('_',' ').title()):
+                        if isinstance(section_value, list):
+                            for item in section_value:
+                                st.markdown(f"<div class='insight-block'>{item}</div>", unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"<div class='insight-block'>{section_value}</div>", unsafe_allow_html=True)
+            else:
+                st.info("Insight data not available.")
         
         # Export options
+        st.markdown("<div class='section-separator'></div>", unsafe_allow_html=True)
         st.subheader("📤 Export Results")
         
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            if st.button("📊 Export as PDF Report"):
-                # This would generate a PDF report
-                st.info("PDF export feature coming soon!")
+            # Section selector
+            with st.expander("Select Export Sections", expanded=False):
+                default_sections = list(SECTION_DEFS.keys())
+                chosen_sections = st.multiselect(
+                    "Sections", default_sections, default=default_sections, key="pdf_sections_select"
+                )
+            if st.button("📊 Export as PDF Report", key="export_pdf_btn"):
+                if not _PDF_AVAILABLE:
+                    st.error("PDF engine (WeasyPrint) not available. Ensure dependency installed.")
+                else:
+                    full_html = build_pdf_html(analysis_result, chosen_sections or list(SECTION_DEFS.keys()))
+                    try:
+                        pdf_bytes = HTML(string=full_html).write_pdf()
+                        st.download_button(
+                            label="⬇️ Download PDF",
+                            data=pdf_bytes,
+                            file_name=f"ats_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                            mime='application/pdf'
+                        )
+                        st.success("PDF generated.")
+                    except Exception as e:
+                        st.error(f"PDF generation failed: {e}")
         
         with col2:
-            if st.button("📋 Copy Results to Clipboard"):
-                # This would copy results to clipboard
-                st.info("Copy to clipboard feature coming soon!")
+            if st.button("📋 Copy Results to Clipboard", key="copy_clip_btn"):
+                payload = json.dumps(analysis_result.to_dict(), indent=2)
+                st.markdown("""
+                <style>
+                .toast-copy-success { position:fixed; top:85px; right:25px; background:var(--panel); backdrop-filter:blur(12px); border:1px solid var(--panel-border); padding:.65rem 1rem; border-radius:14px; box-shadow:0 6px 20px -4px rgba(0,0,0,.35); animation:f-pop .35s ease; font-size:.85rem; }
+                @keyframes f-pop { 0%{transform:translateY(-6px);opacity:0;} 100%{transform:translateY(0);opacity:1;} }
+                </style>
+                <div id="copy-toast" style="display:none" class="toast-copy-success">✅ Copied to clipboard</div>
+                """, unsafe_allow_html=True)
+                st.markdown(f"""
+                <script>
+                (function() {{
+                   const txt = {json.dumps(payload)};
+                   function showToast() {{
+                       const el = window.parent.document.getElementById('copy-toast');
+                       if(!el) return; el.style.display='block'; setTimeout(()=>el.style.display='none', 2600);
+                   }}
+                   try {{ navigator.clipboard.writeText(txt).then(showToast).catch(showToast); }} catch(e) {{ showToast(); }}
+                }})();
+                </script>
+                """, unsafe_allow_html=True)
+                st.info("Clipboard attempted (browser permission required).")
         
         with col3:
             # Download JSON
@@ -424,6 +659,15 @@ class StreamlitDashboard:
                 file_name=f"ats_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                 mime="application/json"
             )
+
+        # Admin-only diagnostics panel
+        roles = get_user_roles(st.session_state.current_user_id)
+        if 'admin' in roles:
+            with st.expander("🛠 Admin Diagnostics"):
+                st.write("User Roles:", roles)
+                st.write("Session State Keys:", list(st.session_state.keys()))
+                if st.button("Grant Admin Again (noop)"):
+                    st.info("Role already present.")
     
     def render_history_page(self):
         """Render analysis history page."""

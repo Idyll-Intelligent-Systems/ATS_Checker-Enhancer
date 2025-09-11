@@ -21,7 +21,12 @@ __email__ = "support@zex-ats-ai.com"
 
 from src.core.config import settings
 from src.core.ats_analyzer import ATSAnalyzer
-from src.core.resume_processor import ResumeProcessor
+try:  # Optional during minimal in-house tests
+    from src.core.resume_processor import ResumeProcessor  # type: ignore
+except Exception:  # pragma: no cover
+    class ResumeProcessor:  # minimal stub
+        def __init__(self, *_, **__):
+            raise RuntimeError("ResumeProcessor dependencies not installed in minimal mode")
 
 __all__ = [
     "settings",

@@ -1,0 +1,30 @@
+{
+  "theme": "dark",
+  "users": {
+    "u1": {
+      "accent": "#ff00aa",
+      "roles": [
+        "admin"
+      ]
+    },
+    "multi-role-user": {
+      "roles": [
+        "admin",
+        "auditor"
+      ]
+    },
+    "userA": {
+      "color": "red"
+    },
+    "userB": {
+      "color": "blue"
+    },
+    "u123": {
+      "note": "hello",
+      "roles": [
+        "admin"
+      ]
+    }
+  },
+  "dark_mode": true
+}

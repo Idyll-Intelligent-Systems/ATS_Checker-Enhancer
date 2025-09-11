@@ -4,9 +4,21 @@ Handles all application settings and environment configuration.
 """
 
 import os
-from typing import List, Optional
-from pydantic_settings import BaseSettings
-from pydantic import validator
+from typing import List, Optional, Dict, Any
+import json
+from pathlib import Path
+try:
+    from pydantic_settings import BaseSettings  # type: ignore
+    from pydantic import validator  # type: ignore
+except Exception:  # lightweight fallback without pydantic
+    class BaseSettings:  # type: ignore
+        def __init__(self, **kwargs):
+            for k,v in kwargs.items():
+                setattr(self, k, v)
+    def validator(*_args, **_kwargs):  # type: ignore
+        def wrap(fn):
+            return fn
+        return wrap
 
 
 class Settings(BaseSettings):
@@ -32,10 +44,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./data/ats.db"
     redis_url: str = "redis://localhost:6379/0"
     
-    # AI Services
-    openai_api_key: Optional[str] = None
-    anthropic_api_key: Optional[str] = None
-    huggingface_api_key: Optional[str] = None
+    # AI Services (external providers removed; placeholders intentionally omitted)
     
     # File Storage
     minio_endpoint: str = "localhost:9000"
@@ -78,6 +87,11 @@ class Settings(BaseSettings):
     enable_salary_prediction: bool = True
     enable_skills_extraction: bool = True
     enable_sentiment_analysis: bool = True
+    # Dashboard user preference persistence
+    preferences_file: str = "data/user_prefs.json"
+    # Role defaults
+    default_roles: List[str] = ["user", "admin"]
+    default_role: str = "user"
     
     @validator('supported_formats', pre=True)
     def parse_supported_formats(cls, v):
@@ -99,6 +113,96 @@ class Settings(BaseSettings):
 
 # Global settings instance
 settings = Settings()
+
+
+# ---------------------------------------------------------------------------
+# User Preferences Persistence (simple JSON, no external dependencies)
+# ---------------------------------------------------------------------------
+_PREF_CACHE: Dict[str, Any] = {}
+_PREFS_PATH = Path(settings.preferences_file)
+
+def load_user_preferences() -> Dict[str, Any]:
+    """Load user preferences from disk (cached)."""
+    global _PREF_CACHE
+    if _PREF_CACHE:
+        return _PREF_CACHE
+    try:
+        if _PREFS_PATH.exists():
+            with _PREFS_PATH.open('r', encoding='utf-8') as f:
+                _PREF_CACHE = json.load(f)
+        else:
+            _PREF_CACHE = {}
+    except Exception:
+        _PREF_CACHE = {}
+    return _PREF_CACHE
+
+def save_user_preferences(prefs: Dict[str, Any]) -> None:
+    """Persist user preferences to disk with atomic write."""
+    global _PREF_CACHE
+    _PREF_CACHE.update(prefs)
+    try:
+        _PREFS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = _PREFS_PATH.with_suffix('.tmp')
+        with tmp_path.open('w', encoding='utf-8') as f:
+            json.dump(_PREF_CACHE, f, indent=2, ensure_ascii=False)
+        tmp_path.replace(_PREFS_PATH)
+    except Exception:
+        pass
+
+def get_user_preference(key: str, default: Any = None) -> Any:
+    return load_user_preferences().get(key, default)
+
+def set_user_preference(key: str, value: Any) -> None:
+    save_user_preferences({key: value})
+
+# ---------------------------------------------------------------------------
+# Per-user (namespaced) preferences
+# Stored under root dict as {"users": {user_id: {k:v}}}
+# ---------------------------------------------------------------------------
+def _ensure_users_root() -> Dict[str, Any]:
+    prefs = load_user_preferences()
+    if 'users' not in prefs or not isinstance(prefs['users'], dict):
+        prefs['users'] = {}
+        save_user_preferences({'users': prefs['users']})
+    return prefs['users']
+
+def get_user_scoped_preference(user_id: str, key: str, default: Any = None) -> Any:
+    users = _ensure_users_root()
+    return users.get(user_id, {}).get(key, default)
+
+def set_user_scoped_preference(user_id: str, key: str, value: Any) -> None:
+    users = _ensure_users_root()
+    if user_id not in users or not isinstance(users[user_id], dict):
+        users[user_id] = {}
+    users[user_id][key] = value
+    save_user_preferences({'users': users})
+
+# ---------------------------------------------------------------------------
+# Role-based persistence (simple; production would query DB)
+# Stored as users[user_id]['roles'] = [role1, role2]
+# ---------------------------------------------------------------------------
+def get_user_roles(user_id: str) -> List[str]:
+    users = _ensure_users_root()
+    roles = users.get(user_id, {}).get('roles')
+    if not roles:
+        return [settings.default_role]
+    if isinstance(roles, list):
+        return [str(r) for r in roles]
+    return [str(roles)]
+
+def add_user_role(user_id: str, role: str) -> None:
+    users = _ensure_users_root()
+    entry = users.setdefault(user_id, {})
+    existing = entry.get('roles') or []
+    if role not in existing:
+        entry['roles'] = existing + [role]
+        save_user_preferences({'users': users})
+
+def user_has_role(user_id: str, role: str) -> bool:
+    return role in get_user_roles(user_id)
+
+def require_role(user_id: str, role: str) -> bool:
+    return user_has_role(user_id, role)
 
 
 def get_database_url() -> str:

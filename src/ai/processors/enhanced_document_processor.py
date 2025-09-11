@@ -20,15 +20,11 @@ import openpyxl
 from pptx import Presentation
 import speech_recognition as sr
 import cv2
-from moviepy.editor import VideoFileClip
 import pytesseract
 from PIL import Image, ImageEnhance, ImageFilter
 import numpy as np
 
-# AI and text processing
-import openai
-from transformers import pipeline
-import whisper
+# Removed: openai, transformers, whisper (replaced by in-house heuristics)
 
 # Async file handling
 import aiofiles
@@ -36,7 +32,10 @@ from fastapi import UploadFile
 
 from src.core.config import settings
 from src.utils.helpers import generate_unique_filename
-from src.ai.models.openai_client import OpenAIClient
+from src.ai.inhouse.base import registry as inhouse_registry
+from src.ai.inhouse.keyword_model import KeywordScorer  # registers
+from src.ai.inhouse.sentiment_lexicon import LexiconSentiment  # registers
+from src.ai.inhouse.insight_generator import InsightGenerator  # registers
 
 
 logger = logging.getLogger(__name__)
@@ -87,27 +86,22 @@ class EnhancedDocumentProcessor:
     }
     
     def __init__(self):
-        """Initialize the enhanced document processor."""
-        self.openai_client = OpenAIClient()
-        self.whisper_model = None
-        self.ocr_languages = ['eng', 'spa', 'fra', 'deu', 'ita', 'por']  # Multi-language OCR
-        
-        # Initialize Whisper for audio transcription
-        try:
-            self.whisper_model = whisper.load_model("base")
-            logger.info("Whisper model loaded for audio transcription")
-        except Exception as e:
-            logger.warning(f"Failed to load Whisper model: {e}")
-        
-        # Initialize speech recognition
+        """Initialize processor with in-house analysis components only."""
+        self.ocr_languages = ['eng']  # restrict initial set; extendable
         self.recognizer = sr.Recognizer()
-        
-        # Initialize AI pipeline for text analysis
-        self.text_analyzer = pipeline(
-            "text-classification",
-            model="microsoft/DialoGPT-medium",
-            return_all_scores=True
-        )
+        # In-house models
+        self.keyword_model: KeywordScorer = inhouse_registry.get("keyword_scorer")  # type: ignore
+        self.sentiment_model: LexiconSentiment = inhouse_registry.get("lexicon_sentiment")  # type: ignore
+        self.insight_model: InsightGenerator = inhouse_registry.get("insight_generator")  # type: ignore
+        # Internal corpus bootstrap for keyword model (lightweight domain terms)
+        bootstrap_docs = [
+            "python docker kubernetes aws microservices scalable resilient pipeline data analysis",
+            "project management leadership communication optimization cost reduction cloud migration",
+        ]
+        for doc in bootstrap_docs:
+            self.keyword_model.add_document(doc)
+        # Stub transcription placeholder
+        self._audio_transcription_mode = "stub"
     
     async def process_document(
         self, 
@@ -551,26 +545,18 @@ class EnhancedDocumentProcessor:
         try:
             # Get audio info
             if file_path.endswith(('.mp3', '.wav', '.m4a')):
-                # Use Whisper for transcription if available
-                if self.whisper_model:
-                    result = self.whisper_model.transcribe(file_path)
-                    content_data["transcription"] = result["text"]
-                    content_data["text"] = result["text"]
-                    content_data["language"] = result.get("language", "unknown")
-                    content_data["segments"] = result.get("segments", [])
-                else:
-                    # Fallback to speech_recognition
-                    with sr.AudioFile(file_path) as source:
-                        audio = self.recognizer.record(source)
-                        try:
-                            text = self.recognizer.recognize_google(audio)
-                            content_data["transcription"] = text
-                            content_data["text"] = text
-                        except sr.UnknownValueError:
-                            content_data["text"] = ""
-                            content_data["error"] = "Could not understand audio"
-                        except sr.RequestError as e:
-                            content_data["error"] = f"Could not request results: {e}"
+                # Whisper removed – direct speech_recognition fallback
+                with sr.AudioFile(file_path) as source:
+                    audio = self.recognizer.record(source)
+                    try:
+                        text = self.recognizer.recognize_google(audio)
+                        content_data["transcription"] = text
+                        content_data["text"] = text
+                    except sr.UnknownValueError:
+                        content_data["text"] = ""
+                        content_data["error"] = "Could not understand audio"
+                    except sr.RequestError as e:
+                        content_data["error"] = f"Could not request results: {e}"
             
         except Exception as e:
             logger.error(f"Error processing audio: {e}")
@@ -592,68 +578,54 @@ class EnhancedDocumentProcessor:
         return await self._process_video(file_path, file_info)
     
     async def _process_video(self, file_path: str, file_info: Dict) -> Dict[str, Any]:
-        """Process video files - extract audio and analyze frames."""
+        """Process video via OpenCV frame sampling (no audio extraction)."""
         content_data = {
             "text": "",
-            "audio_transcription": "",
+            "audio_transcription": "",  # removed whisper dependency
             "video_info": {},
             "key_frames": [],
             "ocr_results": [],
             "summary": ""
         }
-        
         try:
-            # Load video
-            video = VideoFileClip(file_path)
-            
-            content_data["video_info"] = {
-                "duration": video.duration,
-                "fps": video.fps,
-                "size": video.size,
-                "has_audio": video.audio is not None
-            }
-            
-            # Extract and transcribe audio if present
-            if video.audio:
-                audio_path = tempfile.mktemp(suffix=".wav")
-                try:
-                    video.audio.write_audiofile(audio_path, verbose=False, logger=None)
-                    audio_result = await self._process_audio(audio_path, {"format": "wav"})
-                    content_data["audio_transcription"] = audio_result.get("text", "")
-                    content_data["text"] += audio_result.get("text", "")
-                finally:
-                    if os.path.exists(audio_path):
-                        os.unlink(audio_path)
-            
-            # Extract key frames and perform OCR
-            duration = video.duration
-            frame_times = [duration * i / 10 for i in range(0, 11)]  # 11 frames
-            
-            for i, time in enumerate(frame_times):
-                try:
-                    frame = video.get_frame(time)
-                    frame_image = Image.fromarray(frame.astype('uint8'), 'RGB')
-                    
-                    # Perform OCR on frame
-                    frame_ocr = await self._perform_ocr(frame_image)
-                    if frame_ocr.get("text", "").strip():
-                        content_data["ocr_results"].append({
-                            "frame": i,
-                            "time": time,
-                            "text": frame_ocr["text"],
-                            "confidence": frame_ocr.get("ocr_confidence", 0)
-                        })
-                        content_data["text"] += frame_ocr["text"] + " "
-                
-                except Exception as e:
-                    logger.warning(f"Error processing frame {i}: {e}")
-            
-            video.close()
-            
+            cap = cv2.VideoCapture(file_path)
+            if not cap.isOpened():
+                raise ValueError("Unable to open video file")
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
+            fps = cap.get(cv2.CAP_PROP_FPS) or 0
+            duration = total_frames / fps if fps else 0
+            content_data["video_info"] = {"frames": total_frames, "fps": fps, "duration": duration}
+            sample_points = {int(total_frames * r / 10) for r in range(0, 11) if total_frames}
+            idx = 0
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                if idx in sample_points:
+                    try:
+                        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        frame_img = Image.fromarray(rgb)
+                        ocr_res = await self._perform_ocr(frame_img)
+                        if ocr_res.get("text", "").strip():
+                            content_data["ocr_results"].append({
+                                "frame": idx,
+                                "time": (idx / fps) if fps else 0,
+                                "text": ocr_res["text"],
+                                "confidence": ocr_res.get("ocr_confidence", 0)
+                            })
+                            content_data["text"] += ocr_res["text"] + " "
+                    except Exception:
+                        pass
+                idx += 1
+            cap.release()
+            if content_data["text"].strip():
+                words = content_data["text"].split()
+                content_data["summary"] = "Video contains textual elements: " + ' '.join(words[:40]) + ("..." if len(words) > 40 else "")
+            else:
+                content_data["summary"] = "No significant text detected in sampled frames."
         except Exception as e:
             logger.error(f"Error processing video: {e}")
             content_data["error"] = str(e)
-        
         return content_data
     
     # Helper Methods
