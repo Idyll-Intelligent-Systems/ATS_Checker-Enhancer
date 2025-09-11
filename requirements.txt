@@ -23,7 +23,6 @@ PyJWT==2.8.0  # Added: used by jwt_handler via `import jwt`
 
 # File handling and processing
 aiofiles==23.2.1
-python-multipart==0.0.6
 
 # Document processing - Core formats
 PyMuPDF==1.23.8
