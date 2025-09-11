@@ -6,6 +6,7 @@ If nltk / textblob / spacy not installed, uses simple heuristic.
 
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
+from src.utils.system_logger import log_function
 
 # Optional heavy deps --------------------------------------------------------
 try:
@@ -81,6 +82,7 @@ class SentimentAnalyzer:
             'accelerated','achieved','advanced','boosted','built','created','delivered','developed','directed','drove','enhanced','exceeded','executed','expanded','generated','implemented','improved','increased','influenced','initiated','launched','led','managed','maximized','optimized','organized','produced','reduced','resolved','spearheaded','strengthened','streamlined','transformed'
         }
 
+    @log_function("INFO", "SENTIMENT_OK")
     def analyze_sentiment(self, text: str) -> SentimentResult:
         if not text.strip():
             return SentimentResult('neutral', 1.0,0,0,1,0,0)
@@ -115,6 +117,7 @@ class SentimentAnalyzer:
             confidence = 1.0 - abs(compound)
         return SentimentResult(sentiment, confidence, positive_score, negative_score, neutral_score, compound, subjectivity)
 
+    @log_function("DEBUG", "PRO_TONE_OK")
     def _analyze_professional_tone(self, text: str) -> Dict[str, float]:
         tl = text.lower(); words = tl.split(); total = len(words) or 1
         pos = sum(1 for w in words if w in self.positive_professional_words)
@@ -127,6 +130,7 @@ class SentimentAnalyzer:
             'negative_ratio': neg/total
         }
 
+    @log_function("DEBUG", "SECTION_SENTIMENTS_OK")
     def analyze_section_sentiments(self, sections: Dict[str, str]) -> Dict[str, SentimentResult]:
         out = {}
         for name, content in sections.items():
@@ -134,6 +138,7 @@ class SentimentAnalyzer:
                 out[name] = self.analyze_sentiment(content)
         return out
 
+    @log_function("REMARK", "TONE_RECS_OK")
     def get_tone_recommendations(self, sentiment_result: SentimentResult, text: str) -> List[str]:
         rec = []
         if sentiment_result.overall_sentiment == 'negative':
@@ -144,6 +149,7 @@ class SentimentAnalyzer:
             rec.append('Add more energetic language to avoid sounding too dry.')
         return rec
 
+    @log_function("METRIC", "CONFIDENCE_METRICS_OK")
     def calculate_confidence_indicators(self, text: str) -> Dict[str, float]:
         tl = text.lower(); words = tl.split(); total = len(words) or 1
         confident = {'successfully','achieved','accomplished','exceeded','led','managed','implemented','developed','expert','proficient'}

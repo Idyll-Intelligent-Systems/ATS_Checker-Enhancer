@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Dict, List, Any
+from src.utils.system_logger import log_function
 import base64
 import json
 
@@ -23,6 +24,7 @@ SECTION_DEFS = {
     "insights": ("In-House Insights", "insights"),
 }
 
+@log_function("REMARK", "PDF_HTML_OK")
 def build_pdf_html(analysis_result: Any, selected_sections: List[str]) -> str:
     """Build full HTML for PDF generation.
 

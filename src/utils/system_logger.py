@@ -41,7 +41,10 @@ _base_logger = logging.getLogger(LOGGER_NAME)
 
 
 def init_system_logger(level: int = logging.INFO, enable_colors: bool | None = None) -> None:
-    """Initialize system logger with color support once."""
+    """Initialize system logger with color support once.
+
+    On Windows terminals, attempts to enable ANSI colors via colorama if present.
+    """
     global _base_logger
     if enable_colors is None:
         enable_colors = sys.stdout.isatty()
@@ -49,6 +52,14 @@ def init_system_logger(level: int = logging.INFO, enable_colors: bool | None = N
         return  # Already initialized
     _base_logger.setLevel(level)
     handler = logging.StreamHandler(sys.stdout)
+
+    # Best-effort enable ANSI colors on Windows if possible
+    if enable_colors and sys.platform.startswith("win"):
+        try:  # optional dependency
+            import colorama  # type: ignore
+            colorama.just_fix_windows_console()
+        except Exception:  # pragma: no cover - optional improvement only
+            pass
 
     class _PassthroughFormatter(logging.Formatter):
         def format(self, record: logging.LogRecord) -> str:  # noqa: D401

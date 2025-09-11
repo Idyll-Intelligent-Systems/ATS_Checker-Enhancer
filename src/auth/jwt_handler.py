@@ -9,6 +9,7 @@ from typing import Optional, Dict, Any
 import secrets
 
 from src.core.config import settings
+from src.utils.system_logger import log_function
 
 
 class JWTHandler:
@@ -20,6 +21,7 @@ class JWTHandler:
         self.algorithm = settings.jwt_algorithm
         self.access_token_expire_minutes = settings.access_token_expire_minutes
     
+    @log_function("INFO", "JWT_CREATE_ACCESS_OK")
     def create_access_token(
         self, 
         data: Dict[str, Any], 
@@ -51,6 +53,7 @@ class JWTHandler:
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt
     
+    @log_function("INFO", "JWT_CREATE_REFRESH_OK")
     def create_refresh_token(self, data: Dict[str, Any]) -> str:
         """
         Create a JWT refresh token with longer expiration.
@@ -73,6 +76,7 @@ class JWTHandler:
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt
     
+    @log_function("DEBUG", "JWT_VERIFY_OK")
     def verify_token(self, token: str) -> Dict[str, Any]:
         """
         Verify and decode a JWT token.
@@ -95,6 +99,7 @@ class JWTHandler:
         except jwt.InvalidTokenError:
             raise jwt.InvalidTokenError("Invalid token")
     
+    @log_function("INFO", "JWT_REFRESH_OK")
     def refresh_access_token(self, refresh_token: str) -> str:
         """
         Generate new access token from refresh token.
@@ -128,6 +133,7 @@ class JWTHandler:
         except jwt.InvalidTokenError:
             raise jwt.InvalidTokenError("Invalid refresh token")
     
+    @log_function("DEBUG", "JWT_CLAIMS_OK")
     def get_token_claims(self, token: str) -> Optional[Dict[str, Any]]:
         """
         Get token claims without verification (for debugging).
@@ -144,6 +150,7 @@ class JWTHandler:
         except Exception:
             return None
     
+    @log_function("DEBUG", "JWT_EXPIRED_OK")
     def is_token_expired(self, token: str) -> bool:
         """
         Check if token is expired without raising exception.
@@ -167,6 +174,7 @@ class JWTHandler:
         except Exception:
             return True
     
+    @log_function("DEBUG", "JWT_EXPIRY_OK")
     def get_token_expiry(self, token: str) -> Optional[datetime]:
         """
         Get token expiration datetime.
@@ -190,6 +198,7 @@ class JWTHandler:
         except Exception:
             return None
     
+    @log_function("INFO", "JWT_CREATE_API_OK")
     def create_api_token(self, user_id: str, api_key_id: str) -> str:
         """
         Create a JWT token for API access.
@@ -211,6 +220,7 @@ class JWTHandler:
         expire_delta = timedelta(days=365)
         return self.create_access_token(data, expire_delta)
     
+    @log_function("DEBUG", "JWT_VERIFY_API_OK")
     def verify_api_token(self, token: str) -> Dict[str, Any]:
         """
         Verify API token and return claims.
@@ -246,14 +256,17 @@ class SessionManager:
         self.blacklisted_tokens = set()  # In production, use Redis
         self.active_sessions = {}  # In production, use Redis
     
+    @log_function("ALERT", "JWT_BLACKLIST_ADD_OK")
     def add_to_blacklist(self, token: str) -> None:
         """Add token to blacklist (logout)."""
         self.blacklisted_tokens.add(token)
     
+    @log_function("DEBUG", "JWT_BLACKLIST_CHECK_OK")
     def is_blacklisted(self, token: str) -> bool:
         """Check if token is blacklisted."""
         return token in self.blacklisted_tokens
     
+    @log_function("INFO", "SESSION_CREATE_OK")
     def create_session(self, user_id: str, token: str) -> str:
         """Create a new user session."""
         session_id = secrets.token_urlsafe(32)
@@ -265,6 +278,7 @@ class SessionManager:
         }
         return session_id
     
+    @log_function("DEBUG", "SESSION_VALIDATE_OK")
     def validate_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         """Validate and update session."""
         session = self.active_sessions.get(session_id)
@@ -274,6 +288,7 @@ class SessionManager:
             return session
         return None
     
+    @log_function("ALERT", "SESSION_INVALIDATE_OK")
     def invalidate_session(self, session_id: str) -> None:
         """Invalidate a specific session."""
         if session_id in self.active_sessions:
@@ -283,6 +298,7 @@ class SessionManager:
             # Remove session
             del self.active_sessions[session_id]
     
+    @log_function("ALERT", "SESSIONS_INVALIDATE_USER_OK")
     def invalidate_user_sessions(self, user_id: str) -> None:
         """Invalidate all sessions for a user."""
         sessions_to_remove = []
@@ -297,6 +313,7 @@ class SessionManager:
         for session_id in sessions_to_remove:
             del self.active_sessions[session_id]
     
+    @log_function("ALERT", "SESSIONS_CLEANUP_OK")
     def cleanup_expired_sessions(self) -> None:
         """Remove expired sessions."""
         current_time = datetime.utcnow()
@@ -315,6 +332,7 @@ class PasswordManager:
     """Password security utilities."""
     
     @staticmethod
+    @log_function("DEBUG", "GEN_SECURE_PASSWORD_OK")
     def generate_secure_password(length: int = 16) -> str:
         """Generate a cryptographically secure password."""
         import string
@@ -322,6 +340,7 @@ class PasswordManager:
         return ''.join(secrets.choice(alphabet) for _ in range(length))
     
     @staticmethod
+    @log_function("METRIC", "PASSWORD_STRENGTH_OK")
     def check_password_strength(password: str) -> Dict[str, Any]:
         """
         Check password strength and return analysis.
@@ -385,6 +404,7 @@ class PasswordManager:
         }
     
     @staticmethod
+    @log_function("DEBUG", "GEN_RESET_TOKEN_OK")
     def generate_reset_token() -> str:
         """Generate secure password reset token."""
         return secrets.token_urlsafe(32)

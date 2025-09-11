@@ -7,6 +7,7 @@ import re
 import string
 from typing import List, Dict, Optional, Set
 import unicodedata
+from src.utils.system_logger import log_function
 
 # Optional imports with graceful fallback
 try:
@@ -68,6 +69,7 @@ class TextProcessor:
                 except Exception:
                     pass
     
+    @log_function("INFO", "CLEAN_TEXT_OK")
     def clean_text(self, text: str) -> str:
         if not text:
             return ""
@@ -98,6 +100,7 @@ class TextProcessor:
         text = re.sub(r'(\w)-\s*\n\s*(\w)', r'\1\2', text)
         return text
     
+    @log_function("DEBUG", "STANDARDIZE_FORMAT_OK")
     def _standardize_formatting(self, text: str) -> str:
         text = re.sub(r'[•·‣⁃▪▫◦‣⁃]', '•', text)
         text = re.sub(r'[–—]', '-', text)
@@ -109,10 +112,12 @@ class TextProcessor:
         text = re.sub(r'www\s*\.\s*', 'www.', text)
         return text
     
+    @log_function("DEBUG", "EXTRACT_SENTENCES_OK")
     def extract_sentences(self, text: str) -> List[str]:
         sentences = sent_tokenize(text)
         return [s.strip() for s in sentences if len(s.strip()) > 10 and not s.strip().isupper()]
     
+    @log_function("DEBUG", "EXTRACT_WORDS_OK")
     def extract_words(self, text: str, remove_stopwords: bool = True) -> List[str]:
         words = word_tokenize(text.lower())
         clean = []
@@ -121,12 +126,14 @@ class TextProcessor:
                 clean.append(w)
         return clean
     
+    @log_function("DEBUG", "LEMMATIZE_OK")
     def lemmatize_text(self, text: str) -> str:
         if not self.lemmatizer:
             return text.lower()
         words = word_tokenize(text.lower())
         return ' '.join(self.lemmatizer.lemmatize(w) for w in words if w.isalpha())
     
+    @log_function("DEBUG", "EXTRACT_PHRASES_OK")
     def extract_phrases(self, text: str, min_length: int = 2, max_length: int = 4) -> List[str]:
         if not self.nlp or getattr(self.nlp, 'pipe_names', []) == []:
             return []
@@ -145,6 +152,7 @@ class TextProcessor:
                     phrases.append(phrase)
         return list(set(phrases))
     
+    @log_function("METRIC", "TEXT_STATS_OK")
     def calculate_text_stats(self, text: str) -> Dict[str, int]:
         sentences = sent_tokenize(text)
         words = word_tokenize(text)
@@ -159,6 +167,7 @@ class TextProcessor:
             'vocabulary_richness': len(set(w.lower() for w in words if w.isalpha()))/len(words) if words else 0
         }
     
+    @log_function("DEBUG", "TECH_TERMS_OK")
     def extract_technical_terms(self, text: str) -> List[str]:
         technical_terms = []
         acronyms = re.findall(r'\b[A-Z]{2,5}\b', text)
@@ -175,6 +184,7 @@ class TextProcessor:
             technical_terms.extend(re.findall(pattern, text, re.IGNORECASE))
         return list(set(t.lower() for t in technical_terms))
     
+    @log_function("DEBUG", "NORMALIZE_TITLES_OK")
     def normalize_job_titles(self, text: str) -> List[str]:
         title_patterns = [
             r'\b(senior|lead|principal|staff)\s+(engineer|developer|analyst|manager)\b',
@@ -190,6 +200,7 @@ class TextProcessor:
             job_titles.extend([m if isinstance(m, str) else ' '.join(m) for m in matches])
         return list(set(j.lower().strip() for j in job_titles))
     
+    @log_function("DEBUG", "CONTACT_PATTERNS_OK")
     def extract_contact_patterns(self, text: str) -> Dict[str, List[str]]:
         patterns = {
             'emails': r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',

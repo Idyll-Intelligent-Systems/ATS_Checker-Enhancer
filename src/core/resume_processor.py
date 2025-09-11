@@ -18,6 +18,7 @@ from minio import Minio
 from src.core.config import settings
 from src.utils.text_cleaner import TextCleaner
 from src.utils.file_validator import FileValidator
+from src.utils.system_logger import log_function
 
 
 @dataclass
@@ -91,6 +92,7 @@ class ResumeProcessor:
         except Exception as e:
             print(f"Warning: Could not create MinIO bucket: {e}")
     
+    @log_function("INFO", "PROCESS_FILE_OK")
     async def process_resume_file(
         self, 
         file_content: BinaryIO, 
@@ -165,6 +167,7 @@ class ResumeProcessor:
             contact_info=contact_info
         )
     
+    @log_function("INFO", "PROCESS_TEXT_OK")
     async def process_resume_text(self, text: str, filename: str = "text_input.txt") -> ProcessedResume:
         """
         Process resume from plain text input.

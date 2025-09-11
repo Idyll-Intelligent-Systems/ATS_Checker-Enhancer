@@ -90,3 +90,4 @@ tenacity==8.2.3
 click==8.1.7
 rich==13.7.0
 typer==0.9.0
+colorama==0.4.6  # For Windows ANSI color support (optional)

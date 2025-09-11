@@ -12,6 +12,7 @@ import json
 import redis.asyncio as aioredis
 
 from src.core.config import settings
+from src.utils.system_logger import log_function
 
 
 class RateLimiter:
@@ -47,6 +48,7 @@ class RateLimiter:
             }
         }
     
+    @log_function("INFO", "RATE_LIMITER_INIT_OK")
     async def initialize(self):
         """Initialize Redis connection."""
         try:
@@ -62,6 +64,7 @@ class RateLimiter:
             print(f"Redis connection failed, using local cache: {e}")
             self.redis_client = None
     
+    @log_function("METRIC", "CHECK_LIMIT_OK")
     async def check_limit(self, user_id: str, tier: str) -> bool:
         """
         Check if user can make a request within rate limits.
@@ -94,6 +97,7 @@ class RateLimiter:
         
         return True
     
+    @log_function("DEBUG", "WINDOW_LIMIT_OK")
     async def _check_window_limit(
         self, 
         user_id: str, 
@@ -118,6 +122,7 @@ class RateLimiter:
         current_count = self.local_cache.get(key, 0)
         return current_count < limit
     
+    @log_function("DEBUG", "INCR_COUNTER_OK")
     async def _increment_counter(
         self, 
         user_id: str, 
@@ -151,6 +156,7 @@ class RateLimiter:
             for k in keys_to_delete:
                 del self.local_cache[k]
     
+    @log_function("INFO", "GET_USAGE_OK")
     async def get_current_usage(self, user_id: str) -> Dict[str, int]:
         """Get current usage stats for a user."""
         current_time = int(time.time())
@@ -179,6 +185,7 @@ class RateLimiter:
         
         return usage
     
+    @log_function("ALERT", "RESET_LIMITS_OK")
     async def reset_user_limits(self, user_id: str) -> bool:
         """Reset all rate limits for a user (admin function)."""
         if self.redis_client:
@@ -198,10 +205,12 @@ class RateLimiter:
         
         return True
     
+    @log_function("DEBUG", "TIER_LIMITS_OK")
     def get_tier_limits(self, tier: str) -> Dict[str, int]:
         """Get rate limits for a specific tier."""
         return self.tier_limits.get(tier, self.tier_limits["free"]).copy()
     
+    @log_function("METRIC", "CHK_CONC_OK")
     async def check_concurrent_analyses(self, user_id: str, tier: str) -> bool:
         """Check if user can start a new concurrent analysis."""
         limits = self.tier_limits.get(tier, self.tier_limits["free"])
@@ -219,6 +228,7 @@ class RateLimiter:
         current_count = self.local_cache.get(key, 0)
         return current_count < limits["concurrent_analyses"]
     
+    @log_function("INFO", "START_ANALYSIS_OK")
     async def start_analysis(self, user_id: str) -> str:
         """Mark the start of an analysis and return analysis ID."""
         analysis_id = f"{user_id}:{int(time.time())}"
@@ -243,6 +253,7 @@ class RateLimiter:
         
         return analysis_id
     
+    @log_function("INFO", "FINISH_ANALYSIS_OK")
     async def finish_analysis(self, user_id: str, analysis_id: str):
         """Mark the completion of an analysis."""
         key = f"concurrent:{user_id}"
@@ -269,6 +280,7 @@ class RateLimiter:
         if analysis_key in self.local_cache:
             del self.local_cache[analysis_key]
     
+    @log_function("ALERT", "CLEANUP_STALE_OK")
     async def cleanup_stale_analyses(self):
         """Clean up stale analysis records (should be run periodically)."""
         current_time = int(time.time())

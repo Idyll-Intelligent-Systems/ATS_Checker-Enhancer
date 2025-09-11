@@ -44,9 +44,10 @@ try:  # Lightweight runtime may exclude heavy doc/PDF deps
     from src.core.resume_processor import ResumeProcessor  # type: ignore
 except Exception as e:  # pragma: no cover - runtime degradation path
     ResumeProcessor = None  # type: ignore
-    logger.warning(f"ResumeProcessor unavailable (degraded mode): {e}")
+    # Logger may not be initialized yet at import time
+    print(f"ResumeProcessor unavailable (degraded mode): {e}")
 from dynamic_website_generator import DynamicWebsiteGenerator
-from src.utils.system_logger import init_system_logger, log_api_event
+from src.utils.system_logger import init_system_logger, log_api_event, log_function
 
 # Initialize structured system logger
 init_system_logger()
@@ -353,7 +354,9 @@ async def root():
     }
 
 # ---------- Internal Helpers ----------
+@log_function("REMARK", "STORE_ANALYSIS_OK")
 async def _store_analysis(user_id, analysis_id, analysis: ResumeAnalysis, metadata, filename: str):
+    """Persist analysis results and metadata to database."""
     try:
         async with get_database_session() as session:
             record = Analysis(
@@ -377,6 +380,7 @@ async def _store_analysis(user_id, analysis_id, analysis: ResumeAnalysis, metada
     except Exception as e:
         logger.error(f"Failed to store analysis {analysis_id}: {e}")
 
+@log_function("INFO", "PROCESS_SITE_OK")
 async def _process_site(gen_id: str, file: UploadFile, theme: str, output_name: Optional[str]):
     status: GenerationStatus = generations[gen_id]
     try:

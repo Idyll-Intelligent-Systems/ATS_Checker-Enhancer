@@ -14,6 +14,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.core.config import settings, get_database_url
+from src.utils.system_logger import log_function
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +27,7 @@ async_session_factory = None
 sync_session_factory = None
 
 
+@log_function("INFO", "DB_INIT_OK")
 def initialize_database():
     """Initialize database connections and session factories."""
     global engine, async_engine, async_session_factory, sync_session_factory
@@ -93,6 +95,7 @@ def initialize_database():
 
 
 @asynccontextmanager
+@log_function("DEBUG", "DB_SESSION_OK")
 async def get_database_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Get async database session with proper error handling and cleanup.
@@ -130,6 +133,7 @@ async def get_database_session() -> AsyncGenerator[AsyncSession, None]:
                 raise
 
 
+@log_function("DEBUG", "DB_SYNC_SESSION_OK")
 def get_sync_session():
     """
     Get synchronous database session for migrations and admin tasks.
@@ -152,6 +156,7 @@ class DatabaseManager:
     def __init__(self):
         self.initialized = False
     
+    @log_function("INFO", "DB_MANAGER_INIT_OK")
     async def initialize(self):
         """Initialize database connections."""
         if not self.initialized:
@@ -159,6 +164,7 @@ class DatabaseManager:
             self.initialized = True
             logger.info("Database manager initialized")
     
+    @log_function("METRIC", "DB_CHECK_CONN_OK")
     async def check_connection(self) -> bool:
         """Check if database connection is healthy."""
         try:
@@ -173,6 +179,7 @@ class DatabaseManager:
             logger.error(f"Database connection check failed: {e}")
             return False
     
+    @log_function("DEBUG", "DB_CONN_INFO_OK")
     async def get_connection_info(self) -> dict:
         """Get database connection information."""
         database_url = get_database_url()
@@ -201,6 +208,7 @@ class DatabaseManager:
             "connection_status": await self.check_connection()
         }
     
+    @log_function("ALERT", "DB_CLEANUP_OK")
     async def cleanup(self):
         """Clean up database connections."""
         global engine, async_engine
@@ -264,6 +272,7 @@ class ConnectionPoolMonitor:
 
 
 # Database health checker
+@log_function("INFO", "DB_HEALTH_OK")
 async def check_database_health() -> dict:
     """Comprehensive database health check."""
     health_info = {
@@ -321,6 +330,7 @@ db_manager = DatabaseManager()
 
 
 # Utility functions for common operations
+@log_function("DEBUG", "DB_EXEC_QUERY_OK")
 async def execute_query(query: str, params: dict = None):
     """Execute a raw SQL query safely."""
     async with get_database_session() as session:
@@ -331,6 +341,7 @@ async def execute_query(query: str, params: dict = None):
         return result
 
 
+@log_function("DEBUG", "DB_TABLE_INFO_OK")
 async def get_table_info(table_name: str) -> dict:
     """Get information about a specific table."""
     try:

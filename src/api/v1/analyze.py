@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Backgro
 from fastapi.responses import JSONResponse
 import mimetypes
 from pathlib import Path
+from src.utils.system_logger import log_function
 
 from src.core.security import get_current_user
 from src.models.user import User
@@ -34,6 +35,7 @@ rate_limiter = RateLimiter()
 
 
 @router.get("/supported-formats", response_model=SupportedFormatsResponse)
+@log_function("INFO", "ANALYZE_SUPPORTED_FORMATS_OK")
 async def get_supported_formats():
     """Get list of all supported file formats."""
     try:
@@ -131,6 +133,7 @@ async def get_supported_formats():
 
 
 @router.post("/resume/multi-format", response_model=MultiFormatAnalysisResponse)
+@log_function("INFO", "ANALYZE_MULTI_FORMAT_OK")
 async def analyze_resume_multi_format(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -332,6 +335,7 @@ async def analyze_resume_multi_format(
 
 
 @router.post("/document/batch-process")
+@log_function("INFO", "ANALYZE_BATCH_PROCESS_OK")
 async def batch_process_documents(
     files: List[UploadFile] = File(...),
     analysis_type: str = "resume",
@@ -407,6 +411,7 @@ async def batch_process_documents(
 
 
 # Helper functions
+@log_function("DEBUG", "ANALYZE_GET_PROC_METHOD_OK")
 def get_processing_method(format_type: str) -> str:
     """Get the processing method description for a format."""
     methods = {
@@ -427,6 +432,7 @@ def get_processing_method(format_type: str) -> str:
     return methods.get(format_type, "Standard text extraction")
 
 
+@log_function("DEBUG", "ANALYZE_GET_EXTRACT_METHOD_OK")
 def get_extraction_method(format_type: str) -> str:
     """Get the extraction method used for a format."""
     methods = {
@@ -447,6 +453,7 @@ def get_extraction_method(format_type: str) -> str:
     return methods.get(format_type, "Generic text extraction")
 
 
+@log_function("DEBUG", "ANALYZE_GEN_RECOMMENDATIONS_OK")
 def generate_format_recommendations(format_type: str, content_data: Dict) -> List[str]:
     """Generate format-specific recommendations."""
     recommendations = []
@@ -485,6 +492,7 @@ def generate_format_recommendations(format_type: str, content_data: Dict) -> Lis
     return recommendations
 
 
+@log_function("DEBUG", "ANALYZE_UPGRADE_SUGGESTIONS_OK")
 def get_upgrade_suggestions(tier: str, format_type: str) -> List[str]:
     """Get upgrade suggestions based on user tier and format."""
     if tier == "free":
@@ -502,6 +510,7 @@ def get_upgrade_suggestions(tier: str, format_type: str) -> List[str]:
     return []
 
 
+@log_function("INFO", "ANALYZE_PROCESS_SINGLE_OK")
 async def process_single_file_async(file: UploadFile, analysis_type: str, user: User) -> Dict:
     """Process a single file asynchronously for batch processing."""
     try:
@@ -525,6 +534,7 @@ async def process_single_file_async(file: UploadFile, analysis_type: str, user: 
         }
 
 
+@log_function("REMARK", "ANALYZE_ADVANCED_BG_OK")
 async def perform_advanced_analysis(
     analysis_id: str,
     text: str,

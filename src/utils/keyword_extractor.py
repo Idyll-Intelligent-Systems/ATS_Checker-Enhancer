@@ -35,6 +35,7 @@ except Exception:  # pragma: no cover
     requests = None  # type: ignore
 
 from src.core.config import settings
+from src.utils.system_logger import log_function
 
 
 class KeywordExtractor:
@@ -112,6 +113,7 @@ class KeywordExtractor:
         }
 
     # --------------------------- Public Methods -----------------------------
+    @log_function("INFO", "KW_EXTRACT_OK")
     async def extract_keywords(self, text: str, method: str = 'hybrid', top_n: int = 50) -> List[str]:
         if not text.strip():
             return []
@@ -194,6 +196,7 @@ class KeywordExtractor:
         counts = Counter(combined)
         return [k for k,_ in counts.most_common(top_n)]
 
+    @log_function("DEBUG", "SKILLS_EXTRACT_OK")
     def extract_skills(self, text: str) -> Dict[str, List[str]]:
         text_lower = text.lower()
         out = defaultdict(list)
@@ -206,6 +209,7 @@ class KeywordExtractor:
                 out['soft_skills'].append(s)
         return dict(out)
 
+    @log_function("METRIC", "SKILL_MATCH_OK")
     def calculate_skill_match(self, resume_text: str, job_description: str) -> Dict[str, float]:
         resume = self.extract_skills(resume_text)
         job = self.extract_skills(job_description)
@@ -216,6 +220,7 @@ class KeywordExtractor:
             scores[cat] = len(r & j) / len(j) if j else 0.0
         return scores
 
+    @log_function("DEBUG", "EXP_KW_EXTRACT_OK")
     def extract_experience_keywords(self, text: str) -> Dict[str, List[str]]:
         out = {'action_verbs': [], 'achievements': [], 'technologies': [], 'metrics': []}
         verbs = ['achieved','developed','implemented','managed','led','created','improved','increased','optimized','delivered']
@@ -229,6 +234,7 @@ class KeywordExtractor:
                 out['metrics'].append(m if isinstance(m, str) else ' '.join(m))
         return out
 
+    @log_function("DEBUG", "REQS_EXTRACT_OK")
     def extract_job_requirements(self, job_description: str) -> Dict[str, List[str]]:
         """Lightweight extraction of job requirements (synchronous, no awaits)."""
         req = {'required_skills': [], 'preferred_skills': [], 'experience_level': [], 'education': [], 'certifications': []}
@@ -250,6 +256,7 @@ class KeywordExtractor:
             req['education'].extend([m if isinstance(m, str) else ' '.join(m) for m in re.findall(p, text_lower)])
         return req
 
+    @log_function("DEBUG", "GENERIC_KW_OK")
     def extract_generic_keywords(self) -> List[str]:
         generic = []
         for _, skills in self.technical_skills.items():

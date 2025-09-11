@@ -11,6 +11,7 @@ from pathlib import Path
 import hashlib
 
 from src.core.config import settings
+from src.utils.system_logger import log_function
 
 
 @dataclass
@@ -70,6 +71,7 @@ class FileValidator:
             b'PNG' + b'\x00' * 50,   # Image headers in documents
         ]
     
+    @log_function("INFO", "VALIDATE_FILE_OK")
     async def validate_file(
         self, 
         file_content: BinaryIO, 
@@ -176,6 +178,7 @@ class FileValidator:
             security_score=security_result['security_score']
         )
     
+    @log_function("DEBUG", "DETECT_MIME_OK")
     async def _detect_mime_type(self, file_data: bytes) -> str:
         """Detect MIME type using python-magic."""
         try:
@@ -186,6 +189,7 @@ class FileValidator:
             # Fallback to basic detection based on file signature
             return self._detect_mime_by_signature(file_data)
     
+    @log_function("DEBUG", "DETECT_SIGNATURE_OK")
     def _detect_mime_by_signature(self, file_data: bytes) -> str:
         """Detect MIME type by file signature (magic bytes)."""
         if file_data.startswith(b'%PDF'):
@@ -211,6 +215,7 @@ class FileValidator:
                 except UnicodeDecodeError:
                     return 'application/octet-stream'
     
+    @log_function("DEBUG", "VALIDATE_MIME_OK")
     def _validate_mime_type(self, file_extension: str, mime_type: str) -> Dict[str, any]:
         """Validate MIME type matches file extension."""
         expected_mimes = self.safe_mime_types.get(file_extension, [])
@@ -237,6 +242,7 @@ class FileValidator:
             'error': f"MIME type {mime_type} doesn't match extension {file_extension}"
         }
     
+    @log_function("METRIC", "SECURITY_CHECKS_OK")
     async def _perform_security_checks(self, file_data: bytes, file_extension: str) -> Dict[str, any]:
         """Perform comprehensive security checks on file content."""
         security_score = 1.0
@@ -370,6 +376,7 @@ class FileValidator:
             'is_safe': is_safe
         }
     
+    @log_function("DEBUG", "STRUCTURE_VALIDATE_OK")
     async def _validate_file_structure(self, file_data: bytes, file_extension: str) -> Dict[str, any]:
         """Validate file structure integrity."""
         warnings = []
@@ -468,10 +475,12 @@ class FileValidator:
         
         return False
     
+    @log_function("METRIC", "FILE_HASH_OK")
     def calculate_file_hash(self, file_data: bytes) -> str:
         """Calculate SHA-256 hash of file for integrity checking."""
         return hashlib.sha256(file_data).hexdigest()
     
+    @log_function("DEBUG", "DUPLICATE_CHECK_OK")
     def is_duplicate_file(self, file_hash: str, existing_hashes: List[str]) -> bool:
         """Check if file is a duplicate based on hash."""
         return file_hash in existing_hashes

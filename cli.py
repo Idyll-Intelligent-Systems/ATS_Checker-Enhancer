@@ -22,6 +22,10 @@ from src.utils.rate_limiter import RateLimiter
 from src.services.user_service import UserService
 from src.services.analytics_service import AnalyticsService
 from src.models.user import User, UserRole, SubscriptionTier
+from src.utils.system_logger import init_system_logger, log_function
+
+# Initialize structured logger for CLI context
+init_system_logger()
 
 
 class ZeXCLI:
@@ -34,6 +38,7 @@ class ZeXCLI:
         self.user_service = None
         self.analytics_service = None
     
+    @log_function("INFO", "CLI_INIT_OK")
     async def initialize(self):
         """Initialize all services."""
         print("Initializing ZeX-ATS-AI CLI...")
@@ -52,6 +57,7 @@ class ZeXCLI:
         
         print("✅ CLI initialized successfully")
     
+    @log_function("INFO", "CLI_CREATE_USER_OK")
     async def create_user(self, email: str, password: str, role: str = "user", tier: str = "free") -> Dict:
         """Create a new user."""
         try:
@@ -77,6 +83,7 @@ class ZeXCLI:
                 "message": f"Failed to create user: {str(e)}"
             }
     
+    @log_function("INFO", "CLI_LIST_USERS_OK")
     async def list_users(self, limit: int = 50, offset: int = 0) -> Dict:
         """List all users with pagination."""
         try:
@@ -106,6 +113,7 @@ class ZeXCLI:
                 "message": f"Failed to list users: {str(e)}"
             }
     
+    @log_function("INFO", "CLI_UPDATE_TIER_OK")
     async def update_user_tier(self, email: str, tier: str) -> Dict:
         """Update user subscription tier."""
         try:
@@ -131,6 +139,7 @@ class ZeXCLI:
                 "message": f"Failed to update user tier: {str(e)}"
             }
     
+    @log_function("INFO", "CLI_ANALYTICS_OK")
     async def get_user_analytics(self, days: int = 30) -> Dict:
         """Get user analytics for the specified period."""
         try:
@@ -147,6 +156,7 @@ class ZeXCLI:
                 "message": f"Failed to get analytics: {str(e)}"
             }
     
+    @log_function("ALERT", "CLI_RESET_RL_OK")
     async def reset_rate_limits(self, email: str) -> Dict:
         """Reset rate limits for a user."""
         try:
@@ -177,6 +187,7 @@ class ZeXCLI:
                 "message": f"Failed to reset rate limits: {str(e)}"
             }
     
+    @log_function("INFO", "CLI_RL_STATUS_OK")
     async def get_rate_limit_status(self, email: str) -> Dict:
         """Get current rate limit status for a user."""
         try:
@@ -204,6 +215,7 @@ class ZeXCLI:
                 "message": f"Failed to get rate limit status: {str(e)}"
             }
     
+    @log_function("ALERT", "CLI_CLEANUP_OK")
     async def cleanup_system(self) -> Dict:
         """Run system cleanup tasks."""
         try:
@@ -227,6 +239,7 @@ class ZeXCLI:
                 "message": f"System cleanup failed: {str(e)}"
             }
     
+    @log_function("INFO", "CLI_SYS_STATUS_OK")
     async def get_system_status(self) -> Dict:
         """Get overall system status."""
         try:
@@ -268,6 +281,7 @@ class ZeXCLI:
                 "message": f"Failed to get system status: {str(e)}"
             }
     
+    @log_function("INFO", "CLI_BACKUP_OK")
     async def backup_database(self, output_path: str) -> Dict:
         """Create a database backup."""
         try:
@@ -285,6 +299,7 @@ class ZeXCLI:
                 "message": f"Backup failed: {str(e)}"
             }
     
+    @log_function("DEBUG", "CLI_PRINT_RESULT_OK")
     def print_result(self, result: Dict):
         """Print CLI command result in a formatted way."""
         if result["status"] == "success":
@@ -302,6 +317,7 @@ class ZeXCLI:
             print(f"❌ {result.get('message', 'Error occurred')}")
 
 
+@log_function("INFO", "CLI_MAIN_OK")
 async def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(description="ZeX-ATS-AI CLI Administration Tool")

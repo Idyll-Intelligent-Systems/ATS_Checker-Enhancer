@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 import json
 import io
 from typing import Dict, List, Optional
+from src.utils.system_logger import init_system_logger, log_function
 from src.core.config import (
     load_user_preferences,
     set_user_preference,
@@ -29,6 +30,9 @@ try:
     _PDF_AVAILABLE = True
 except Exception:  # graceful fallback
     _PDF_AVAILABLE = False
+
+# Initialize structured logger for Streamlit runtime (idempotent)
+init_system_logger()
 
 # Set page configuration
 st.set_page_config(
@@ -78,6 +82,7 @@ class StreamlitDashboard:
     # ------------------------------------------------------------------
     # THEME & STYLING
     # ------------------------------------------------------------------
+    @log_function("DEBUG", "DASHBOARD_THEME_INJECT_OK")
     def inject_theme(self):
         """Inject dynamic glassmorphism theme based on dark/light mode."""
         dark = st.session_state.dark_mode
@@ -194,6 +199,7 @@ class StreamlitDashboard:
         </style>
         """, unsafe_allow_html=True)
     
+    @log_function("INFO", "DASHBOARD_RUN_OK")
     def run(self):
         """Run the main dashboard."""
         # Inject theme each run (supports dark mode toggle)
@@ -221,6 +227,7 @@ class StreamlitDashboard:
         elif page == 'settings':
             self.render_settings_page()
     
+    @log_function("INFO", "DASHBOARD_SIDEBAR_OK")
     def render_sidebar(self):
         """Render the sidebar navigation."""
         with st.sidebar:
@@ -277,6 +284,7 @@ class StreamlitDashboard:
                     st.metric("This Month", "12")
                     st.metric("Best Score", "94.2")
     
+    @log_function("INFO", "DASHBOARD_ANALYZE_PAGE_OK")
     def render_analysis_page(self):
         """Render the main analysis page."""
         col1, col2 = st.columns([2, 1])
@@ -391,6 +399,7 @@ class StreamlitDashboard:
             st.markdown("---")
             self.render_analysis_results(st.session_state.analysis_results)
     
+    @log_function("DEBUG", "DASHBOARD_RESULTS_OK")
     def render_analysis_results(self, analysis_result):
         """Render the analysis results with visualizations."""
         st.header("📊 Analysis Results")
@@ -669,6 +678,7 @@ class StreamlitDashboard:
                 if st.button("Grant Admin Again (noop)"):
                     st.info("Role already present.")
     
+    @log_function("INFO", "DASHBOARD_HISTORY_OK")
     def render_history_page(self):
         """Render analysis history page."""
         st.header("📈 Analysis History")
@@ -761,6 +771,7 @@ class StreamlitDashboard:
             use_container_width=True
         )
     
+    @log_function("INFO", "DASHBOARD_INSIGHTS_OK")
     def render_insights_page(self):
         """Render insights and trends page."""
         st.header("💡 Insights & Trends")
@@ -819,6 +830,7 @@ class StreamlitDashboard:
         for practice in best_practices:
             st.markdown(f"• {practice}")
     
+    @log_function("INFO", "DASHBOARD_SETTINGS_OK")
     def render_settings_page(self):
         """Render settings and preferences page."""
         st.header("⚙️ Settings & Preferences")
@@ -872,6 +884,7 @@ class StreamlitDashboard:
             if st.button("Update Profile"):
                 st.success("Profile updated successfully!")
     
+    @log_function("DEBUG", "DASHBOARD_SCORE_COLOR_OK")
     def get_score_color(self, score):
         """Get color based on score value."""
         if score >= 80:

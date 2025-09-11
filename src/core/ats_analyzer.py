@@ -42,6 +42,7 @@ from src.utils.keyword_extractor import KeywordExtractor
 from src.utils.sentiment_analyzer import SentimentAnalyzer
 from src.ai.inhouse.base import registry as inhouse_registry  # new in-house framework
 from src.ai.inhouse.insight_generator import InsightGenerator  # registers itself
+from src.utils.system_logger import log_function
 
 logger = logging.getLogger("zex.ats_analyzer")
 
@@ -128,6 +129,7 @@ class ATSAnalyzer:
 
     # Legacy external AI clients removed.
     
+    @log_function("INFO", "ANALYZE_RESUME_OK")
     async def analyze_resume(
         self, 
         resume_text: str, 
@@ -173,6 +175,7 @@ class ATSAnalyzer:
             timestamp=start_time
         )
     
+    @log_function("METRIC", "ATS_COMPAT_OK")
     async def _analyze_ats_compatibility(
         self, 
         resume_text: str, 
@@ -225,6 +228,7 @@ class ATSAnalyzer:
             education_score=round(education_score * 100, 1)
         )
     
+    @log_function("DEBUG", "KW_SCORE_OK")
     async def _calculate_keyword_score(
         self, 
         resume_text: str, 
@@ -245,6 +249,7 @@ class ATSAnalyzer:
         matches = len(set(job_keywords) & set(resume_keywords))
         return min(matches / len(job_keywords), 1.0)
     
+    @log_function("DEBUG", "FORMAT_OK")
     def _calculate_format_score(self, resume_text: str) -> float:
         """Calculate format compatibility score."""
         score = 0.0
@@ -281,6 +286,7 @@ class ATSAnalyzer:
         
         return min(score, 1.0)
     
+    @log_function("DEBUG", "READABILITY_OK")
     def _calculate_readability_score(self, resume_text: str) -> float:
         """Calculate readability score using various metrics."""
         try:
@@ -301,6 +307,7 @@ class ATSAnalyzer:
         except:
             return 0.7  # Neutral score if calculation fails
     
+    @log_function("DEBUG", "CONTENT_OK")
     def _calculate_content_score(self, resume_text: str) -> float:
         """Calculate content quality score (robust without spaCy)."""
         score = 0.0
@@ -335,6 +342,7 @@ class ATSAnalyzer:
         
         return min(score, 1.0)
     
+    @log_function("DEBUG", "CONTACT_OK")
     def _calculate_contact_score(self, resume_text: str) -> float:
         """Calculate contact information completeness score."""
         score = 0.0
@@ -357,6 +365,7 @@ class ATSAnalyzer:
         
         return min(score, 1.0)
     
+    @log_function("DEBUG", "SKILLS_OK")
     def _calculate_skills_score(self, resume_text: str) -> float:
         """Calculate skills section quality score."""
         score = 0.0
@@ -377,6 +386,7 @@ class ATSAnalyzer:
         
         return min(score, 1.0)
     
+    @log_function("DEBUG", "EXPERIENCE_OK")
     def _calculate_experience_score(self, resume_text: str) -> float:
         """Calculate experience section quality score."""
         score = 0.0
@@ -539,6 +549,7 @@ class ATSAnalyzer:
             'estimated_pages': len(resume_text) // 3000 + 1  # Rough estimate
         }
     
+    @log_function("REMARK", "INHOUSE_INSIGHTS_OK")
     async def _get_inhouse_insights_wrapper(
         self,
         resume_text: str,
